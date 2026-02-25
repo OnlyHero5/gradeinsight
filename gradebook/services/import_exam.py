@@ -6,15 +6,16 @@ from datetime import date
 from django.db import transaction
 
 from gradebook.models import Exam, ExamImport, ExamQuestionScore, ExamScore, Student
+from gradebook.services.excel_parser import parse_exam_excel
 from gradebook.services.stats_queries import rebuild_question_stats
-from gradebook.services.xlsx_parser import ParsedExam, ParsedStudentRow, parse_exam_xlsx
+from gradebook.services.xlsx_parser import ParsedExam, ParsedStudentRow
 
 
 class DuplicateImportError(Exception):
     """Raised when the same source file is imported repeatedly."""
 
 
-def import_exam_from_xlsx_bytes(
+def import_exam_from_excel_bytes(
     file_bytes: bytes,
     exam_name: str,
     exam_date: date | None,
@@ -24,7 +25,7 @@ def import_exam_from_xlsx_bytes(
     if Exam.objects.filter(source_sha256=source_hash).exists():
         raise DuplicateImportError("该文件已导入，请勿重复提交")
 
-    parsed = parse_exam_xlsx(file_bytes)
+    parsed = parse_exam_excel(file_bytes, source_filename=source_filename)
     with transaction.atomic():
         exam = Exam.objects.create(
             name=exam_name,
@@ -38,6 +39,21 @@ def import_exam_from_xlsx_bytes(
         rebuild_question_stats(exam)
 
     return exam
+
+
+def import_exam_from_xlsx_bytes(
+    file_bytes: bytes,
+    exam_name: str,
+    exam_date: date | None,
+    source_filename: str,
+) -> Exam:
+    # Backward-compatible entry for existing tests/callers.
+    return import_exam_from_excel_bytes(
+        file_bytes=file_bytes,
+        exam_name=exam_name,
+        exam_date=exam_date,
+        source_filename=source_filename,
+    )
 
 
 def compute_sha256(payload: bytes) -> str:

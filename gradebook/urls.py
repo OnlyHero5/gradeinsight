@@ -9,12 +9,14 @@ from gradebook.views import (
     import_upload,
     question_filter,
     student_detail,
+    student_list,
 )
 
 urlpatterns = [
     path("exams/", exam_list, name="exam_list"),
     path("exams/<int:exam_id>/", exam_detail, name="exam_detail"),
     path("exams/<int:exam_id>/filter/", question_filter, name="question_filter"),
+    path("students/", student_list, name="student_list"),
     path("students/<int:student_id>/", student_detail, name="student_detail"),
     path("import/", import_upload, name="import_upload"),
     path("import/<int:import_id>/confirm/", import_confirm, name="import_confirm"),

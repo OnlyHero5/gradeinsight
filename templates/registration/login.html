@@ -1,32 +1,60 @@
 {% extends 'base.html' %}
 
 {% block title %}登录 | GradeInsight{% endblock %}
+{% block page_heading %}教师登录{% endblock %}
 
 {% block content %}
-  <section class="panel" style="max-width: 460px; margin: 80px auto 0;">
-    <header class="page-header" style="margin-bottom: 8px;">
-      <div>
-        <h1 class="page-title">教师登录</h1>
-        <p class="page-subtitle">单账号模式，登录后可上传成绩并管理任务。</p>
-      </div>
-    </header>
+  <section class="login-layout">
+    <article class="glass-shell login-poster">
+      <p class="gi-eyebrow mb-2">Private Workspace</p>
+      <h1 class="section-title">班级成绩分析中枢</h1>
+      <p class="section-subtitle">
+        专注成绩导入、班级诊断、题目筛选和任务追踪。面向一线教学场景，按考试快速形成可执行清单。
+      </p>
+      <ul class="login-points mt-3">
+        <li>自动生成考试分段、通过率、优秀率和题目表现洞察</li>
+        <li>支持按题目均分偏差筛选学生并创建补救任务</li>
+        <li>任务状态可实时切换并导出未交名单</li>
+      </ul>
+    </article>
 
-    <form method="post">
-      {% csrf_token %}
-      <div class="field">
-        <label for="id_username">用户名</label>
-        {{ form.username }}
-      </div>
-      <div class="field" style="margin-top: 10px;">
-        <label for="id_password">密码</label>
-        {{ form.password }}
-      </div>
-      <div class="action-row">
-        <button class="btn" type="submit">登录</button>
-      </div>
-      {% if form.errors %}
-        <p class="page-subtitle" style="color: var(--danger);">用户名或密码错误。</p>
-      {% endif %}
-    </form>
+    <article class="glass-shell login-card">
+      <h2 class="section-title">账号认证</h2>
+      <p class="section-subtitle">请输入账号密码进入系统。</p>
+      <form method="post" class="mt-3">
+        {% csrf_token %}
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}" />
+        {% endif %}
+        <div class="mb-3">
+          <label class="form-label" for="id_username">用户名</label>
+          <input
+            type="text"
+            name="username"
+            id="id_username"
+            class="form-control"
+            autocomplete="username"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="id_password">密码</label>
+          <input
+            type="password"
+            name="password"
+            id="id_password"
+            class="form-control"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <div class="d-grid">
+          <button class="btn btn-gi-primary" type="submit">登录系统</button>
+        </div>
+        {% if form.errors %}
+          <p class="text-danger mt-3 mb-0">用户名或密码错误，请重试。</p>
+        {% endif %}
+      </form>
+    </article>
   </section>
 {% endblock %}

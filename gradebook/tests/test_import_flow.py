@@ -36,3 +36,33 @@ def test_import_upload_returns_preview(client) -> None:
     html = response.content.decode("utf-8")
     assert "导入预览" in html
     assert "学生数" in html
+
+
+@pytest.mark.django_db
+def test_import_upload_accepts_xls(client) -> None:
+    user_model = get_user_model()
+    user_model.objects.create_user(username="t2", password="p")
+    assert client.login(username="t2", password="p")
+
+    payload = Path(
+        "2025-2026学年度第一学期期末考试【八年级】-英语-八7班-单科成绩单.xls"
+    ).read_bytes()
+    upload = SimpleUploadedFile(
+        "sample.xls",
+        payload,
+        content_type="application/vnd.ms-excel",
+    )
+
+    response = client.post(
+        reverse("import_upload"),
+        data={
+            "exam_name": "英语期末-xls",
+            "exam_date": "",
+            "file": upload,
+        },
+    )
+
+    assert response.status_code == 200
+    html = response.content.decode("utf-8")
+    assert "导入预览" in html
+    assert "学生数" in html

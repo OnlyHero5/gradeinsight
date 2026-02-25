@@ -1,38 +1,60 @@
 {% extends 'base.html' %}
 
 {% block title %}考试列表 | GradeInsight{% endblock %}
+{% block page_heading %}班级考试总览{% endblock %}
 
 {% block content %}
-  <section class="panel">
-    <header class="page-header">
+  <section class="glass-shell p-4 mb-3">
+    <div class="section-head">
       <div>
-        <h1 class="page-title">考试列表</h1>
-        <p class="page-subtitle">查看历次考试、进入趋势分析和题目筛选。</p>
+        <h2 class="section-title">考试列表</h2>
+        <p class="section-subtitle">从这里进入单场考试的图表分析、题目筛选与学生诊断。</p>
       </div>
-      <a class="btn" href="{% url 'import_upload' %}">上传新考试</a>
-    </header>
+      <a class="btn btn-gi-primary" href="{% url 'import_upload' %}">
+        <i class="bi bi-upload me-1"></i>上传新考试
+      </a>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      <span class="badge badge-soft rounded-pill px-3 py-2">总考试数：{{ exams|length }}</span>
+      <span class="badge badge-soft rounded-pill px-3 py-2">图表驱动分析</span>
+      <span class="badge badge-soft rounded-pill px-3 py-2">数据来源：Excel</span>
+    </div>
+  </section>
 
+  <section class="glass-shell p-3 p-md-4">
     {% if exams %}
-      <div class="table-wrap">
-        <table>
+      <div class="table-glass">
+        <table class="table table-hover align-middle">
           <thead>
             <tr>
               <th>考试</th>
               <th>日期</th>
               <th>导入时间</th>
               <th>参与统计</th>
-              <th>操作</th>
+              <th>入口</th>
             </tr>
           </thead>
           <tbody>
             {% for exam in exams %}
               <tr>
-                <td>{{ exam.name }}</td>
-                <td>{{ exam.exam_date|default:'未填写' }}</td>
-                <td>{{ exam.imported_at|date:'Y-m-d H:i' }}</td>
-                <td>{{ exam.participants_n }} / 排除 {{ exam.excluded_n }}</td>
                 <td>
-                  <a class="link-btn" href="{% url 'exam_detail' exam.id %}">详情</a>
+                  <strong>{{ exam.name }}</strong><br />
+                  <small class="text-muted">ID #{{ exam.id }}</small>
+                </td>
+                <td>
+                  {% if exam.exam_date %}
+                    {{ exam.exam_date }}
+                  {% else %}
+                    <span class="badge rounded-pill badge-soft">未填写</span>
+                  {% endif %}
+                </td>
+                <td>{{ exam.imported_at|date:'Y-m-d H:i' }}</td>
+                <td>
+                  <span class="badge rounded-pill badge-soft">{{ exam.participants_n }} 人</span>
+                  <span class="badge rounded-pill badge-soft status-danger">排除 {{ exam.excluded_n }} 人</span>
+                </td>
+                <td>
+                  <a class="table-link" href="{% url 'exam_detail' exam.id %}">进入详情</a>
                 </td>
               </tr>
             {% endfor %}
@@ -40,7 +62,7 @@
         </table>
       </div>
     {% else %}
-      <p class="page-subtitle">暂无考试数据，先导入第一份 `.xlsx`。</p>
+      <p class="empty-tip">暂无考试数据，先导入第一份 `.xlsx`。</p>
     {% endif %}
   </section>
 {% endblock %}

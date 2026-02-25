@@ -1,124 +1,246 @@
 {% extends 'base.html' %}
 
 {% block title %}{{ student.name }} | GradeInsight{% endblock %}
+{% block page_heading %}学生详情{% endblock %}
 
 {% block content %}
-  <section class="panel">
-    <header class="page-header">
+  <section class="glass-shell p-4 mb-3">
+    <div class="section-head">
       <div>
-        <h1 class="page-title">{{ student.name }}</h1>
-        <p class="page-subtitle">学号：{{ student.external_id }} · 班级：{{ student.class_name|default:'-' }}</p>
+        <h2 class="section-title">{{ student.name }}</h2>
+        <p class="section-subtitle">学号：{{ student.external_id }} · 班级：{{ student.class_name|default:'-' }}</p>
       </div>
-      <a class="ghost-btn" href="{% url 'exam_list' %}">返回考试列表</a>
-    </header>
-
-    <div id="studentTrend" class="chart"></div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-gi-ghost" href="{% url 'student_list' %}">返回学生档案</a>
+        <a class="btn btn-gi-ghost" href="{% url 'exam_list' %}">返回考试列表</a>
+      </div>
+    </div>
+    <div class="chart-wrap mt-3">
+      <canvas id="studentTrendChart"></canvas>
+    </div>
   </section>
 
-  <section class="layout-two" style="margin-top: 14px;">
-    <article class="panel">
-      <h2 class="page-title" style="font-size: 1.2rem;">历次考试记录</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>考试</th>
-              <th>日期</th>
-              <th>总分</th>
-              <th>排名</th>
-              <th>详情</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in score_rows %}
+  <section class="row g-3">
+    <div class="col-xl-7">
+      <article class="glass-shell p-3 p-md-4 h-100">
+        <h3 class="section-title">历次考试记录</h3>
+        <div class="table-glass mt-2">
+          <table class="table table-hover align-middle">
+            <thead>
               <tr>
-                <td>{{ row.exam.name }}</td>
-                <td>{{ row.exam.exam_date|default:'按导入时间' }}</td>
-                <td>{{ row.total_score|default:'-' }}</td>
-                <td>{{ row.rank_in_class|default:'-' }}</td>
-                <td><a class="link-btn" href="?exam={{ row.exam_id }}">对比题目</a></td>
+                <th>考试</th>
+                <th>日期</th>
+                <th>总分</th>
+                <th>排名</th>
+                <th>入口</th>
               </tr>
-            {% empty %}
-              <tr><td colspan="5">该学生暂无考试数据。</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </article>
+            </thead>
+            <tbody>
+              {% for row in score_rows %}
+                <tr>
+                  <td>{{ row.exam.name }}</td>
+                  <td>{{ row.exam.exam_date|default:'按导入时间' }}</td>
+                  <td>{{ row.total_score|default:'-' }}</td>
+                  <td>{{ row.rank_in_class|default:'-' }}</td>
+                  <td><a class="table-link" href="?exam={{ row.exam_id }}">对比题目</a></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5">该学生暂无考试数据。</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </div>
 
-    <article class="panel">
-      <h2 class="page-title" style="font-size: 1.2rem;">题目表现（选中考试）</h2>
-      {% if selected_row %}
-        <p class="page-subtitle">当前考试：{{ selected_row.exam.name }}</p>
-        {% if show_deltas %}
-          <div class="chip tag-weak">弱势题：{{ weak_items|length }}</div>
-          <div class="chip tag-good">良好题：{{ good_items|length }}</div>
-          <div class="chip">接近平均：{{ avg_items|length }}</div>
+    <div class="col-xl-5">
+      <article class="glass-shell p-3 p-md-4 h-100">
+        <h3 class="section-title">题目表现（选中考试）</h3>
+        {% if selected_row %}
+          <p class="section-subtitle">当前考试：{{ selected_row.exam.name }}</p>
+          {% if show_deltas %}
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              <span class="badge rounded-pill badge-soft status-danger">弱势题：{{ weak_items|length }}</span>
+              <span class="badge rounded-pill badge-soft status-success">良好题：{{ good_items|length }}</span>
+              <span class="badge rounded-pill badge-soft">接近平均：{{ avg_items|length }}</span>
+            </div>
+            <div class="table-glass">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>题号</th>
+                    <th>个人分</th>
+                    <th>班均</th>
+                    <th>差值</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in weak_items|slice:':8' %}
+                    <tr>
+                      <td>{{ item.question_key }}</td>
+                      <td>{{ item.student_score }}</td>
+                      <td>{{ item.mean_score }}</td>
+                      <td><span class="badge rounded-pill badge-soft status-danger">{{ item.delta }}</span></td>
+                    </tr>
+                  {% endfor %}
+                  {% for item in good_items|slice:':8' %}
+                    <tr>
+                      <td>{{ item.question_key }}</td>
+                      <td>{{ item.student_score }}</td>
+                      <td>{{ item.mean_score }}</td>
+                      <td><span class="badge rounded-pill badge-soft status-success">+{{ item.delta }}</span></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="empty-tip">该场考试不参与统计（如未扫/缺考），不展示弱势/良好题目。</p>
+          {% endif %}
+        {% else %}
+          <p class="empty-tip">请选择一场考试查看题目表现。</p>
+        {% endif %}
+      </article>
+    </div>
+  </section>
 
-          <div class="table-wrap" style="margin-top: 10px;">
-            <table>
+  <section class="glass-shell p-4 mt-3">
+    <h3 class="section-title">任务完成情况</h3>
+    <p class="section-subtitle">展示该学生在任务清单中的未完成任务与已完成任务。</p>
+
+    <div class="d-flex flex-wrap gap-2 mt-2 mb-3">
+      <span class="badge rounded-pill badge-soft">总任务：{{ task_summary.all }}</span>
+      <span class="badge rounded-pill badge-soft status-danger">未完成任务：{{ task_summary.pending }}</span>
+      <span class="badge rounded-pill badge-soft status-success">已完成任务：{{ task_summary.completed }}</span>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <article class="glass-card p-3 h-100">
+          <h4 class="section-title" style="font-size: 1.05rem;">未完成任务</h4>
+          <div class="table-glass mt-2">
+            <table class="table table-hover align-middle">
               <thead>
                 <tr>
+                  <th>任务</th>
+                  <th>考试</th>
                   <th>题号</th>
-                  <th>个人分</th>
-                  <th>班均</th>
-                  <th>差值</th>
                 </tr>
               </thead>
               <tbody>
-                {% for item in weak_items|slice:':8' %}
+                {% for assignment in pending_tasks %}
                   <tr>
-                    <td>{{ item.question_key }}</td>
-                    <td>{{ item.student_score }}</td>
-                    <td>{{ item.mean_score }}</td>
-                    <td class="tag-weak">{{ item.delta }}</td>
+                    <td>{{ assignment.task.name }}</td>
+                    <td>{{ assignment.task.exam.name }}</td>
+                    <td>{{ assignment.task.question_key|default:'-' }}</td>
                   </tr>
-                {% endfor %}
-                {% for item in good_items|slice:':8' %}
-                  <tr>
-                    <td>{{ item.question_key }}</td>
-                    <td>{{ item.student_score }}</td>
-                    <td>{{ item.mean_score }}</td>
-                    <td class="tag-good">+{{ item.delta }}</td>
-                  </tr>
+                {% empty %}
+                  <tr><td colspan="3">暂无未完成任务</td></tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
-        {% else %}
-          <p class="page-subtitle">该场考试不参与统计（如未扫/缺考），不展示弱势/良好题目。</p>
-        {% endif %}
-      {% else %}
-        <p class="page-subtitle">请选择一场考试查看题目表现。</p>
-      {% endif %}
-    </article>
-  </section>
+        </article>
+      </div>
 
+      <div class="col-lg-6">
+        <article class="glass-card p-3 h-100">
+          <h4 class="section-title" style="font-size: 1.05rem;">已完成任务</h4>
+          <div class="table-glass mt-2">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>任务</th>
+                  <th>考试</th>
+                  <th>完成时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for assignment in completed_tasks %}
+                  <tr>
+                    <td>{{ assignment.task.name }}</td>
+                    <td>{{ assignment.task.exam.name }}</td>
+                    <td>{{ assignment.submitted_at|date:'Y-m-d H:i' }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="3">暂无已完成任务</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block extra_js %}
   <script>
-    (function () {
-      const target = document.getElementById("studentTrend");
-      if (!target || !window.echarts) {
+    (() => {
+      if (!window.Chart) {
         return;
       }
-      const labels = {{ trend_labels_json|safe }};
-      const scores = {{ trend_scores_json|safe }};
-      const ranks = {{ trend_ranks_json|safe }};
-      const chart = echarts.init(target);
-      chart.setOption({
-        tooltip: { trigger: "axis" },
-        legend: { data: ["总分", "排名"], textStyle: { color: "#dbeeff" } },
-        grid: { left: 34, right: 26, top: 44, bottom: 30 },
-        xAxis: { type: "category", data: labels, axisLabel: { color: "#dbeeff" } },
-        yAxis: [
-          { type: "value", name: "总分", axisLabel: { color: "#dbeeff" } },
-          { type: "value", name: "排名", inverse: true, axisLabel: { color: "#dbeeff" } },
-        ],
-        series: [
-          { name: "总分", type: "line", smooth: true, data: scores, yAxisIndex: 0, lineStyle: { color: "#7bf5cf" } },
-          { name: "排名", type: "line", smooth: true, data: ranks, yAxisIndex: 1, lineStyle: { color: "#4dc4ff" } },
-        ],
+      const labels = JSON.parse('{{ trend_labels_json|escapejs }}');
+      const scores = JSON.parse('{{ trend_scores_json|escapejs }}');
+      const ranks = JSON.parse('{{ trend_ranks_json|escapejs }}');
+      const target = document.getElementById('studentTrendChart');
+      if (!target) {
+        return;
+      }
+
+      new Chart(target, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '总分',
+              data: scores,
+              borderColor: '#0f4ea8',
+              backgroundColor: 'rgba(15, 78, 168, 0.15)',
+              borderWidth: 3,
+              yAxisID: 'yScore',
+              tension: 0.3,
+            },
+            {
+              label: '排名',
+              data: ranks,
+              borderColor: '#f3b64c',
+              backgroundColor: 'rgba(243, 182, 76, 0.18)',
+              borderWidth: 3,
+              yAxisID: 'yRank',
+              tension: 0.3,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 280 },
+          plugins: {
+            tooltip: { backgroundColor: 'rgba(18, 36, 58, 0.9)' },
+            legend: { labels: { color: '#28435f' } },
+          },
+          scales: {
+            x: { ticks: { color: '#28435f' }, grid: { color: 'rgba(40, 67, 95, 0.1)' } },
+            yScore: {
+              type: 'linear',
+              position: 'left',
+              ticks: { color: '#28435f' },
+              grid: { color: 'rgba(40, 67, 95, 0.1)' },
+              title: { display: true, text: '总分', color: '#28435f' },
+            },
+            yRank: {
+              type: 'linear',
+              reverse: true,
+              position: 'right',
+              ticks: { color: '#28435f' },
+              grid: { display: false },
+              title: { display: true, text: '排名', color: '#28435f' },
+            },
+          },
+        },
       });
-      window.addEventListener("resize", () => chart.resize());
     })();
   </script>
 {% endblock %}

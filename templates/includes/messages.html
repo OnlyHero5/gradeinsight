@@ -1,7 +1,12 @@
 {% if messages %}
-  <section class="flash-stack" aria-live="polite">
+  <section class="flash-stack mb-3" aria-live="polite">
     {% for message in messages %}
-      <article class="flash flash-{{ message.tags|default:'info' }}">{{ message }}</article>
+      <article
+        class="alert glass-alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags %}alert-danger{% else %}alert-primary{% endif %} mb-0"
+        role="alert"
+      >
+        {{ message }}
+      </article>
     {% endfor %}
   </section>
 {% endif %}

@@ -1,45 +1,50 @@
 {% extends 'base.html' %}
 
 {% block title %}导入预览 | GradeInsight{% endblock %}
+{% block page_heading %}导入预览{% endblock %}
 
 {% block content %}
-  <section class="panel">
-    <header class="page-header">
-      <div>
-        <h1 class="page-title">导入预览</h1>
-        <p class="page-subtitle">确认数据质量后再写入数据库。</p>
-      </div>
-    </header>
+  <section class="glass-shell p-4">
+    <h2 class="section-title">导入预览</h2>
+    <p class="section-subtitle">核对关键指标后再确认入库，避免错误数据写入。</p>
 
-    <div class="metric-grid">
-      <article class="metric-card">
-        <p class="metric-label">学生数</p>
-        <p class="metric-value">{{ preview.student_count }}</p>
+    <div class="kpi-grid mt-3">
+      <article class="kpi-card">
+        <p class="kpi-label">学生数</p>
+        <p class="kpi-value">{{ preview.student_count }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">题目列数</p>
-        <p class="metric-value">{{ preview.question_count }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">题目列数</p>
+        <p class="kpi-value">{{ preview.question_count }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">不参与统计人数</p>
-        <p class="metric-value">{{ preview.excluded_from_stats_count }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">不参与统计人数</p>
+        <p class="kpi-value">{{ preview.excluded_from_stats_count }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">ID 不一致行数</p>
-        <p class="metric-value">{{ preview.mismatched_id_count }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">ID 不一致行数</p>
+        <p class="kpi-value">{{ preview.mismatched_id_count }}</p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">考试名称</p>
+        <p class="kpi-value">{{ staged.exam_name }}</p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">日期</p>
+        <p class="kpi-value">{{ staged.exam_date|default:'未填写' }}</p>
       </article>
     </div>
 
-    <p class="page-subtitle" style="margin-top: 12px;">
-      统计口径：总分为文本（如“未扫/缺考”）的记录会保留，但不会参与班级统计、题目均分和趋势计算。
+    <p class="section-subtitle mt-3 mb-0">
+      统计口径：总分为文本（如“未扫/缺考”）的记录仅保留原始数据，不参与班级统计与趋势计算。
     </p>
 
-    <div class="action-row">
+    <div class="d-flex flex-wrap gap-2 mt-3">
       <form method="post" action="{% url 'import_confirm' staged.id %}">
         {% csrf_token %}
-        <button class="btn" type="submit">确认入库</button>
+        <button class="btn btn-gi-primary" type="submit">确认入库</button>
       </form>
-      <a class="ghost-btn" href="{% url 'import_upload' %}">返回重选</a>
+      <a class="btn btn-gi-ghost" href="{% url 'import_upload' %}">返回重选</a>
     </div>
   </section>
 {% endblock %}

@@ -1,38 +1,43 @@
 {% extends 'base.html' %}
 
 {% block title %}导入成绩 | GradeInsight{% endblock %}
+{% block page_heading %}导入成绩{% endblock %}
 
 {% block content %}
-  <section class="panel">
-    <header class="page-header">
+  <section class="glass-shell p-4">
+    <div class="section-head">
       <div>
-        <h1 class="page-title">导入考试成绩</h1>
-        <p class="page-subtitle">上传 `.xlsx` 后先预览异常，再确认入库。非数值总分将自动标记为不参与统计。</p>
+        <h2 class="section-title">导入考试成绩</h2>
+        <p class="section-subtitle">上传 `.xlsx` 后先预览异常项，再确认写入数据库。</p>
       </div>
-      <a class="ghost-btn" href="{% url 'exam_list' %}">返回考试列表</a>
-    </header>
+      <a class="btn btn-gi-ghost" href="{% url 'exam_list' %}">返回考试列表</a>
+    </div>
 
-    <form method="post" enctype="multipart/form-data">
+    <div class="d-flex flex-wrap gap-2 mt-3 mb-3">
+      <span class="badge rounded-pill badge-soft px-3 py-2">支持 `.xls` / `.xlsx`</span>
+      <span class="badge rounded-pill badge-soft px-3 py-2">默认以准考证号作为学生唯一标识</span>
+      <span class="badge rounded-pill badge-soft px-3 py-2">非数值总分自动排除统计</span>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="row g-3">
       {% csrf_token %}
-      <div class="form-grid">
-        <div class="field">
-          <label for="id_exam_name">考试名称</label>
-          {{ form.exam_name }}
-          {{ form.exam_name.errors }}
-        </div>
-        <div class="field">
-          <label for="id_exam_date">考试日期（可选）</label>
-          {{ form.exam_date }}
-          {{ form.exam_date.errors }}
-        </div>
-        <div class="field">
-          <label for="id_file">Excel 文件</label>
-          {{ form.file }}
-          {{ form.file.errors }}
-        </div>
+      <div class="col-md-6">
+        <label class="form-label" for="id_exam_name">考试名称</label>
+        {{ form.exam_name }}
+        {{ form.exam_name.errors }}
       </div>
-      <div class="action-row">
-        <button class="btn" type="submit">解析并预览</button>
+      <div class="col-md-6">
+        <label class="form-label" for="id_exam_date">考试日期（可选）</label>
+        {{ form.exam_date }}
+        {{ form.exam_date.errors }}
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="id_file">Excel 文件</label>
+        {{ form.file }}
+        {{ form.file.errors }}
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-gi-primary" type="submit">解析并预览</button>
       </div>
     </form>
   </section>

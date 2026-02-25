@@ -1,0 +1,59 @@
+:root {
+  --gi-bg: #edf4ff;
+  --gi-bg-soft: #f7fbff;
+  --gi-text: #12243a;
+  --gi-muted: #5f7289;
+  --gi-primary: #0f4ea8;
+  --gi-primary-strong: #0a3e87;
+  --gi-cyan: #10a7bf;
+  --gi-accent: #f3b64c;
+  --gi-danger: #cf4b63;
+  --gi-success: #1f9a78;
+
+  --gi-glass: rgba(255, 255, 255, 0.62);
+  --gi-glass-strong: rgba(255, 255, 255, 0.8);
+  --gi-border: rgba(255, 255, 255, 0.74);
+  --gi-shadow: 0 20px 44px rgba(18, 36, 58, 0.14);
+  --gi-shadow-sm: 0 10px 24px rgba(18, 36, 58, 0.1);
+
+  --gi-radius-lg: 24px;
+  --gi-radius-md: 16px;
+  --gi-radius-sm: 12px;
+
+  --gi-font-display: "Space Grotesk", "Noto Sans SC", sans-serif;
+  --gi-font-body: "Manrope", "Noto Sans SC", sans-serif;
+  --gi-font-mono: "JetBrains Mono", monospace;
+
+  --bs-body-font-family: var(--gi-font-body);
+  --bs-body-color: var(--gi-text);
+  --bs-body-bg: transparent;
+  --bs-primary: var(--gi-primary);
+  --bs-primary-rgb: 15, 78, 168;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--gi-font-body);
+  color: var(--gi-text);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(16, 167, 191, 0.45);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

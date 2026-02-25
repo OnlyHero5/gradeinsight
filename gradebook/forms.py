@@ -7,8 +7,16 @@ from django import forms
 
 class ImportUploadForm(forms.Form):
     exam_name = forms.CharField(max_length=255, label="考试名称")
-    exam_date = forms.DateField(required=False, label="考试日期")
+    exam_date = forms.DateField(
+        required=False,
+        label="考试日期",
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
     file = forms.FileField(label="Excel 文件")
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        _apply_bootstrap_classes(self)
 
 
 class QuestionFilterForm(forms.Form):
@@ -35,6 +43,7 @@ class QuestionFilterForm(forms.Form):
         super().__init__(*args, **kwargs)
         key_options = [(item, item) for item in (question_keys or [])]
         self.fields["question_key"].choices = key_options
+        _apply_bootstrap_classes(self)
 
     def clean(self) -> dict:
         data = super().clean()
@@ -52,3 +61,15 @@ class QuestionFilterForm(forms.Form):
             elif Decimal(min_value) > Decimal(max_value):
                 self.add_error("max", "最大值必须大于或等于最小值")
         return data
+
+
+def _apply_bootstrap_classes(form: forms.Form) -> None:
+    for field in form.fields.values():
+        existing = field.widget.attrs.get("class", "").strip()
+        if isinstance(field.widget, forms.CheckboxInput):
+            css_class = "form-check-input"
+        elif isinstance(field.widget, forms.Select):
+            css_class = "form-select"
+        else:
+            css_class = "form-control"
+        field.widget.attrs["class"] = f"{existing} {css_class}".strip()

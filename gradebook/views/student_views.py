@@ -6,7 +6,21 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
 from gradebook.models import ExamScore, Student
+from gradebook.services.student_dashboard import (
+    build_student_overview_rows,
+    build_student_task_snapshot,
+)
 from gradebook.services.weakness import build_question_deltas
+
+
+@login_required
+def student_list(request):
+    student_rows = build_student_overview_rows()
+    context = {
+        "student_rows": student_rows,
+        "student_count": len(student_rows),
+    }
+    return render(request, "gradebook/student_list.html", context)
 
 
 @login_required
@@ -44,6 +58,8 @@ def student_detail(request, student_id: int):
             good_items = [item for item in deltas if item.level == "good"]
             avg_items = [item for item in deltas if item.level == "avg"]
 
+    task_snapshot = build_student_task_snapshot(student)
+
     context = {
         "student": student,
         "score_rows": score_rows,
@@ -52,6 +68,9 @@ def student_detail(request, student_id: int):
         "weak_items": weak_items,
         "good_items": good_items,
         "avg_items": avg_items,
+        "pending_tasks": task_snapshot["pending_tasks"],
+        "completed_tasks": task_snapshot["completed_tasks"],
+        "task_summary": task_snapshot["task_summary"],
         "trend_labels_json": json.dumps(trend_labels, ensure_ascii=False),
         "trend_scores_json": json.dumps(trend_scores, ensure_ascii=False),
         "trend_ranks_json": json.dumps(trend_ranks, ensure_ascii=False),

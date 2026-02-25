@@ -3,14 +3,14 @@
   <td>{{ assignment.student.external_id }}</td>
   <td>
     {% if assignment.is_submitted %}
-      <span class="chip tag-good">已交</span>
+      <span class="badge rounded-pill badge-soft status-success">已交</span>
     {% else %}
-      <span class="chip tag-weak">未交</span>
+      <span class="badge rounded-pill badge-soft status-danger">未交</span>
     {% endif %}
   </td>
   <td>
     <button
-      class="ghost-btn"
+      class="btn btn-sm btn-gi-ghost"
       hx-post="{% url 'assignment_toggle' task.id assignment.id %}"
       hx-target="#assignment-{{ assignment.id }}"
       hx-swap="outerHTML"

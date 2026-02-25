@@ -12,6 +12,11 @@
 - [x] 完成核心页面与响应式 UI（PC + iPad）
 - [x] 完成部署与备份脚手架（Docker/Caddy/runbook）
 - [x] 通过自动化测试（`10 passed`）
+- [x] 完成前端重构（Bootstrap 5.3 + 玻璃拟态 + 科技风）与考试分析增强（多维指标 + 4 图表）
+- [x] 通过重构后回归测试（`12 passed`）
+- [x] 完成 Excel 双格式导入支持（`.xls` + `.xlsx`）并通过回归（`15 passed`）
+- [x] 完成学生档案页（学生总览 + 历次成绩 + 班级排名 + 任务完成状态）并通过回归（`18 passed`）
+- [x] 修复任务切换按钮无响应（HTMX + CSRF）并通过回归（`20 passed`）
 
 ## Deliverables (Code + Docs)
 - Django 项目：`config/`, `gradebook/`, `worklists/`, `templates/`, `static/`

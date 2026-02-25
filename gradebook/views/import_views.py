@@ -8,13 +8,13 @@ from django.urls import reverse
 
 from gradebook.forms import ImportUploadForm
 from gradebook.models import Exam, ExamImport
+from gradebook.services.excel_parser import is_supported_excel_filename, parse_exam_excel
 from gradebook.services.import_exam import (
     DuplicateImportError,
     compute_sha256,
-    import_exam_from_xlsx_bytes,
+    import_exam_from_excel_bytes,
     stage_exam_import,
 )
-from gradebook.services.xlsx_parser import parse_exam_xlsx
 
 
 @login_required
@@ -27,8 +27,8 @@ def import_upload(request):
                 form.add_error("file", f"文件过大，最大支持 {settings.UPLOAD_MAX_BYTES // 1024 // 1024}MB")
                 return render(request, "gradebook/import_upload.html", {"form": form})
 
-            if not upload.name.lower().endswith(".xlsx"):
-                form.add_error("file", "当前仅支持 .xlsx 文件")
+            if not is_supported_excel_filename(upload.name):
+                form.add_error("file", "当前仅支持 .xls / .xlsx 文件")
                 return render(request, "gradebook/import_upload.html", {"form": form})
 
             payload = upload.read()
@@ -37,7 +37,7 @@ def import_upload(request):
                 form.add_error("file", "该文件已导入，请勿重复上传")
                 return render(request, "gradebook/import_upload.html", {"form": form})
 
-            parsed = parse_exam_xlsx(payload)
+            parsed = parse_exam_excel(payload, source_filename=upload.name)
             preview = {
                 "student_count": parsed.student_count,
                 "question_count": len(parsed.question_keys),
@@ -97,7 +97,7 @@ def import_confirm(request, import_id: int):
         return redirect("exam_list")
 
     try:
-        exam = import_exam_from_xlsx_bytes(
+        exam = import_exam_from_excel_bytes(
             file_bytes=bytes(staged.payload),
             exam_name=staged.exam_name,
             exam_date=staged.exam_date,

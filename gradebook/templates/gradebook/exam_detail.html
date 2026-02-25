@@ -1,88 +1,184 @@
 {% extends 'base.html' %}
 
 {% block title %}{{ exam.name }} | GradeInsight{% endblock %}
+{% block page_heading %}考试详情{% endblock %}
 
 {% block content %}
-  <section class="panel">
-    <header class="page-header">
+  <section class="glass-shell p-4 mb-3">
+    <div class="section-head">
       <div>
-        <h1 class="page-title">{{ exam.name }}</h1>
-        <p class="page-subtitle">
+        <h2 class="section-title">{{ exam.name }}</h2>
+        <p class="section-subtitle">
           日期：{{ exam.exam_date|default:'未填写（按导入时间排序）' }}
           {% if no_exam_date %}
-            <span class="chip">提示：该考试未填写日期，趋势按导入时间排序。</span>
+            <span class="badge rounded-pill badge-soft ms-1">未填写考试日期，趋势按导入时间</span>
           {% endif %}
         </p>
       </div>
-      <div class="action-row">
-        <a class="ghost-btn" href="{% url 'question_filter' exam.id %}">题目筛选</a>
-        <a class="ghost-btn" href="{% url 'exam_list' %}">返回列表</a>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-gi-ghost" href="{% url 'question_filter' exam.id %}">
+          <i class="bi bi-funnel me-1"></i>题目筛选
+        </a>
+        <a class="btn btn-gi-ghost" href="{% url 'exam_list' %}">返回列表</a>
       </div>
-    </header>
+    </div>
+  </section>
 
-    <div class="metric-grid">
-      <article class="metric-card">
-        <p class="metric-label">参与统计人数</p>
-        <p class="metric-value">{{ summary.participant_count }}</p>
+  <section class="glass-shell p-3 p-md-4 mb-3">
+    <div class="kpi-grid">
+      <article class="kpi-card">
+        <p class="kpi-label">统计人数</p>
+        <p class="kpi-value">{{ summary.participant_count }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">平均分</p>
-        <p class="metric-value">{{ summary.mean|default:'-' }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">平均分</p>
+        <p class="kpi-value">{{ summary.mean|default:'-' }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">中位数</p>
-        <p class="metric-value">{{ summary.median|default:'-' }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">中位数</p>
+        <p class="kpi-value">{{ summary.median|default:'-' }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">最高 / 最低</p>
-        <p class="metric-value">{{ summary.max|default:'-' }} / {{ summary.min|default:'-' }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">最高 / 最低</p>
+        <p class="kpi-value">{{ summary.max|default:'-' }} / {{ summary.min|default:'-' }}</p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">通过率（≥60）</p>
+        <p class="kpi-value">{% if insight_pack.rates.pass_rate is not None %}{{ insight_pack.rates.pass_rate }}%{% else %}-{% endif %}</p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">优秀率（≥85）</p>
+        <p class="kpi-value">{% if insight_pack.rates.excellent_rate is not None %}{{ insight_pack.rates.excellent_rate }}%{% else %}-{% endif %}</p>
       </article>
     </div>
   </section>
 
-  <section class="layout-two" style="margin-top: 14px;">
-    <article class="panel">
-      <h2 class="page-title" style="font-size: 1.25rem;">分数分布</h2>
-      <div id="histogram" class="chart"></div>
-    </article>
-
-    <article class="panel">
-      <h2 class="page-title" style="font-size: 1.25rem;">Top 成绩</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>学生</th>
-              <th>总分</th>
-              <th>排名</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in top_scores %}
-              <tr>
-                <td>
-                  <a class="link-btn" href="{% url 'student_detail' row.student_id %}">
-                    {{ row.student.name }}
-                  </a>
-                </td>
-                <td>{{ row.total_score }}</td>
-                <td>{{ row.rank_in_class|default:'-' }}</td>
-              </tr>
-            {% empty %}
-              <tr>
-                <td colspan="3">暂无可统计成绩</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </article>
+  <section class="row g-3 mb-3">
+    <div class="col-xl-8">
+      <article class="glass-card chart-card h-100">
+        <h3 class="section-title">分数分布</h3>
+        <p class="section-subtitle">按区间观察班级成绩集中程度。</p>
+        <div class="chart-wrap"><canvas id="histogramChart"></canvas></div>
+      </article>
+    </div>
+    <div class="col-xl-4">
+      <article class="glass-card chart-card h-100">
+        <h3 class="section-title">成绩段分布</h3>
+        <p class="section-subtitle">按成绩段查看班级结构。</p>
+        <div class="chart-wrap"><canvas id="bandChart"></canvas></div>
+      </article>
+    </div>
   </section>
 
-  <section class="panel" style="margin-top: 14px;">
-    <h2 class="page-title" style="font-size: 1.25rem;">题目平均分</h2>
-    <div class="table-wrap">
-      <table>
+  <section class="row g-3 mb-3">
+    <div class="col-xl-6">
+      <article class="glass-card chart-card h-100">
+        <h3 class="section-title">客观/主观得分结构</h3>
+        <p class="section-subtitle">用于定位班级能力结构偏向。</p>
+        <div class="chart-wrap"><canvas id="componentChart"></canvas></div>
+      </article>
+    </div>
+    <div class="col-xl-6">
+      <article class="glass-card chart-card h-100">
+        <h3 class="section-title">题目得分表现</h3>
+        <p class="section-subtitle">对比高表现题与薄弱题。</p>
+        <div class="chart-wrap"><canvas id="questionFocusChart"></canvas></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="row g-3 mb-3">
+    <div class="col-xl-7">
+      <article class="glass-card p-3 p-md-4 h-100">
+        <h3 class="section-title mb-3">Top 成绩</h3>
+        <div class="table-glass">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>学生</th>
+                <th>总分</th>
+                <th>排名</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in top_scores %}
+                <tr>
+                  <td><a class="table-link" href="{% url 'student_detail' row.student_id %}">{{ row.student.name }}</a></td>
+                  <td>{{ row.total_score }}</td>
+                  <td>{{ row.rank_in_class|default:'-' }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3">暂无可统计成绩</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </div>
+    <div class="col-xl-5">
+      <article class="glass-card p-3 p-md-4 h-100">
+        <h3 class="section-title">关注学生（低分段）</h3>
+        <p class="section-subtitle">按总分从低到高展示，便于快速干预。</p>
+        <div class="table-glass mt-2">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>学生</th>
+                <th>总分</th>
+                <th>排名</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in insight_pack.attention_students %}
+                <tr>
+                  <td><a class="table-link" href="{% url 'student_detail' row.student_id %}">{{ row.student_name }}</a></td>
+                  <td>{{ row.total_score|default:'-' }}</td>
+                  <td>{{ row.rank_in_class|default:'-' }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3">暂无关注学生数据</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="glass-shell p-3 p-md-4 mb-3">
+    <div class="row g-2">
+      <div class="col-md-6 col-lg-3">
+        <div class="kpi-card h-100">
+          <p class="kpi-label">P25</p>
+          <p class="kpi-value">{{ insight_pack.percentiles.p25|default:'-' }}</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="kpi-card h-100">
+          <p class="kpi-label">P50</p>
+          <p class="kpi-value">{{ insight_pack.percentiles.p50|default:'-' }}</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="kpi-card h-100">
+          <p class="kpi-label">P75</p>
+          <p class="kpi-value">{{ insight_pack.percentiles.p75|default:'-' }}</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="kpi-card h-100">
+          <p class="kpi-label">标准差 / IQR</p>
+          <p class="kpi-value">{{ insight_pack.dispersion.std_dev|default:'-' }} / {{ insight_pack.dispersion.iqr|default:'-' }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="glass-shell p-3 p-md-4">
+    <h3 class="section-title">题目平均分</h3>
+    <p class="section-subtitle">支持主题与子题并行观察（如 `51`、`51(3)`）。</p>
+    <div class="table-glass mt-2">
+      <table class="table table-hover align-middle">
         <thead>
           <tr>
             <th>题号</th>
@@ -100,37 +196,121 @@
               <td>{{ stat.sample_n }}</td>
             </tr>
           {% empty %}
-            <tr>
-              <td colspan="4">暂无题目统计数据</td>
-            </tr>
+            <tr><td colspan="4">暂无题目统计数据</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </section>
+{% endblock %}
 
+{% block extra_js %}
   <script>
-    (function () {
-      const chartDom = document.getElementById("histogram");
-      if (!chartDom || !window.echarts) {
+    (() => {
+      if (!window.Chart) {
         return;
       }
-      const source = {{ histogram_json|safe }};
-      const chart = echarts.init(chartDom);
-      chart.setOption({
-        tooltip: { trigger: "axis" },
-        grid: { left: 30, right: 20, top: 30, bottom: 30 },
-        xAxis: { type: "category", data: source.map((i) => i.label), axisLabel: { color: "#d9eeff" } },
-        yAxis: { type: "value", axisLabel: { color: "#d9eeff" } },
-        series: [
-          {
-            type: "bar",
-            data: source.map((i) => i.count),
-            itemStyle: { borderRadius: [8, 8, 0, 0], color: "#4dc4ff" },
+
+      const histogramData = JSON.parse('{{ histogram_json|escapejs }}');
+      const scoreBands = JSON.parse('{{ score_bands_json|escapejs }}');
+      const components = JSON.parse('{{ components_json|escapejs }}');
+      const questionFocus = JSON.parse('{{ question_focus_json|escapejs }}');
+
+      const textColor = '#28435f';
+      const gridColor = 'rgba(40, 67, 95, 0.15)';
+      const accent = ['#0f4ea8', '#10a7bf', '#f3b64c', '#cf4b63', '#4b7bec', '#1f9a78'];
+
+      const baseOptions = {
+        animation: { duration: 300 },
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: textColor } },
+          tooltip: { backgroundColor: 'rgba(18, 36, 58, 0.9)' },
+        },
+      };
+
+      const histogramCanvas = document.getElementById('histogramChart');
+      if (histogramCanvas) {
+        new Chart(histogramCanvas, {
+          type: 'bar',
+          data: {
+            labels: histogramData.map((item) => item.label),
+            datasets: [{ label: '人数', data: histogramData.map((item) => item.count), backgroundColor: accent[0], borderRadius: 8 }],
           },
-        ],
-      });
-      window.addEventListener("resize", () => chart.resize());
+          options: {
+            ...baseOptions,
+            scales: {
+              x: { ticks: { color: textColor }, grid: { display: false } },
+              y: { ticks: { color: textColor }, grid: { color: gridColor } },
+            },
+          },
+        });
+      }
+
+      const bandCanvas = document.getElementById('bandChart');
+      if (bandCanvas) {
+        new Chart(bandCanvas, {
+          type: 'doughnut',
+          data: {
+            labels: scoreBands.map((item) => item.label),
+            datasets: [{ data: scoreBands.map((item) => item.count), backgroundColor: accent.slice(0, 4), borderWidth: 0 }],
+          },
+          options: {
+            ...baseOptions,
+            cutout: '62%',
+            plugins: { ...baseOptions.plugins, legend: { position: 'bottom', labels: { color: textColor } } },
+          },
+        });
+      }
+
+      const componentCanvas = document.getElementById('componentChart');
+      if (componentCanvas) {
+        new Chart(componentCanvas, {
+          type: 'bar',
+          data: {
+            labels: ['客观分均值', '主观分均值'],
+            datasets: [{
+              data: [components.objective_mean ?? 0, components.subjective_mean ?? 0],
+              backgroundColor: [accent[1], accent[2]],
+              borderRadius: 8,
+            }],
+          },
+          options: {
+            ...baseOptions,
+            plugins: { ...baseOptions.plugins, legend: { display: false } },
+            scales: {
+              x: { ticks: { color: textColor }, grid: { display: false } },
+              y: { ticks: { color: textColor }, grid: { color: gridColor } },
+            },
+          },
+        });
+      }
+
+      const questionCanvas = document.getElementById('questionFocusChart');
+      if (questionCanvas) {
+        const strongLabels = (questionFocus.strong || []).map((item) => `高 ${item.question_key}`);
+        const weakLabels = (questionFocus.weak || []).map((item) => `弱 ${item.question_key}`);
+        const labels = strongLabels.concat(weakLabels);
+        const values = (questionFocus.strong || []).map((item) => Number(item.mean_score)).concat(
+          (questionFocus.weak || []).map((item) => Number(item.mean_score)),
+        );
+        const colors = labels.map((_, idx) => (idx < strongLabels.length ? accent[5] : accent[3]));
+
+        new Chart(questionCanvas, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: '题均分', data: values, backgroundColor: colors, borderRadius: 8 }] },
+          options: {
+            ...baseOptions,
+            indexAxis: 'y',
+            plugins: { ...baseOptions.plugins, legend: { display: false } },
+            scales: {
+              x: { ticks: { color: textColor }, grid: { color: gridColor } },
+              y: { ticks: { color: textColor }, grid: { display: false } },
+            },
+          },
+        });
+      }
     })();
   </script>
 {% endblock %}

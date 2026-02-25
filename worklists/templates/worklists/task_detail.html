@@ -1,47 +1,56 @@
 {% extends 'base.html' %}
 
 {% block title %}{{ task.name }} | GradeInsight{% endblock %}
+{% block page_heading %}任务详情{% endblock %}
 
 {% block content %}
-  <section class="panel">
-    <header class="page-header">
+  <section class="glass-shell p-4">
+    <div class="section-head">
       <div>
-        <h1 class="page-title">{{ task.name }}</h1>
-        <p class="page-subtitle">考试：{{ task.exam.name }} · 题号：{{ task.question_key|default:'-' }}</p>
+        <h2 class="section-title">{{ task.name }}</h2>
+        <p class="section-subtitle">考试：{{ task.exam.name }} · 题号：{{ task.question_key|default:'-' }}</p>
       </div>
-      <div class="action-row">
-        <a class="ghost-btn" href="{% url 'task_list' %}">返回任务列表</a>
-        <a class="ghost-btn" href="{% url 'task_export_pending_csv' task.id %}">导出未交 CSV</a>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-gi-ghost" href="{% url 'task_list' %}">返回任务列表</a>
+        <a class="btn btn-gi-accent" href="{% url 'task_export_pending_csv' task.id %}">导出未交 CSV</a>
       </div>
-    </header>
+    </div>
 
-    <div class="metric-grid">
-      <article class="metric-card">
-        <p class="metric-label">总人数</p>
-        <p class="metric-value">{{ counts.total }}</p>
+    <div class="kpi-grid mt-3">
+      <article class="kpi-card">
+        <p class="kpi-label">总人数</p>
+        <p class="kpi-value">{{ counts.total }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">已交</p>
-        <p class="metric-value">{{ counts.submitted }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">已交</p>
+        <p class="kpi-value">{{ counts.submitted }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">未交</p>
-        <p class="metric-value">{{ counts.pending }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">未交</p>
+        <p class="kpi-value">{{ counts.pending }}</p>
       </article>
-      <article class="metric-card">
-        <p class="metric-label">筛选视图</p>
-        <p class="metric-value">{{ status_filter }}</p>
+      <article class="kpi-card">
+        <p class="kpi-label">筛选视图</p>
+        <p class="kpi-value">{{ status_filter }}</p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">任务 ID</p>
+        <p class="kpi-value">#{{ task.id }}</p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">创建时间</p>
+        <p class="kpi-value">{{ task.created_at|date:'m-d H:i' }}</p>
       </article>
     </div>
 
-    <div class="action-row">
-      <a class="ghost-btn" href="?status=all">全部</a>
-      <a class="ghost-btn" href="?status=pending">仅未交</a>
-      <a class="ghost-btn" href="?status=submitted">仅已交</a>
+    <div class="d-flex flex-wrap gap-2 mt-3 mb-2">
+      <a class="btn btn-sm btn-gi-ghost" href="?status=all">全部</a>
+      <a class="btn btn-sm btn-gi-ghost" href="?status=pending">仅未交</a>
+      <a class="btn btn-sm btn-gi-ghost" href="?status=submitted">仅已交</a>
     </div>
 
-    <div class="table-wrap" style="margin-top: 12px;">
-      <table>
+    <div class="table-glass">
+      <table class="table table-hover align-middle">
         <thead>
           <tr>
             <th>姓名</th>
