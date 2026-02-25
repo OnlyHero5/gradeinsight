@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ exam.name }} | GradeInsight{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">{{ exam.name }}</h1>
+        <p class="page-subtitle">
+          日期：{{ exam.exam_date|default:'未填写（按导入时间排序）' }}
+          {% if no_exam_date %}
+            <span class="chip">提示：该考试未填写日期，趋势按导入时间排序。</span>
+          {% endif %}
+        </p>
+      </div>
+      <div class="action-row">
+        <a class="ghost-btn" href="{% url 'question_filter' exam.id %}">题目筛选</a>
+        <a class="ghost-btn" href="{% url 'exam_list' %}">返回列表</a>
+      </div>
+    </header>
+
+    <div class="metric-grid">
+      <article class="metric-card">
+        <p class="metric-label">参与统计人数</p>
+        <p class="metric-value">{{ summary.participant_count }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">平均分</p>
+        <p class="metric-value">{{ summary.mean|default:'-' }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">中位数</p>
+        <p class="metric-value">{{ summary.median|default:'-' }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">最高 / 最低</p>
+        <p class="metric-value">{{ summary.max|default:'-' }} / {{ summary.min|default:'-' }}</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="layout-two" style="margin-top: 14px;">
+    <article class="panel">
+      <h2 class="page-title" style="font-size: 1.25rem;">分数分布</h2>
+      <div id="histogram" class="chart"></div>
+    </article>
+
+    <article class="panel">
+      <h2 class="page-title" style="font-size: 1.25rem;">Top 成绩</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>学生</th>
+              <th>总分</th>
+              <th>排名</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in top_scores %}
+              <tr>
+                <td>
+                  <a class="link-btn" href="{% url 'student_detail' row.student_id %}">
+                    {{ row.student.name }}
+                  </a>
+                </td>
+                <td>{{ row.total_score }}</td>
+                <td>{{ row.rank_in_class|default:'-' }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="3">暂无可统计成绩</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel" style="margin-top: 14px;">
+    <h2 class="page-title" style="font-size: 1.25rem;">题目平均分</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>题号</th>
+            <th>平均分</th>
+            <th>中位数</th>
+            <th>样本数</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stat in question_stats %}
+            <tr>
+              <td>{{ stat.question_key }}</td>
+              <td>{{ stat.mean_score }}</td>
+              <td>{{ stat.median_score }}</td>
+              <td>{{ stat.sample_n }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4">暂无题目统计数据</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      const chartDom = document.getElementById("histogram");
+      if (!chartDom || !window.echarts) {
+        return;
+      }
+      const source = {{ histogram_json|safe }};
+      const chart = echarts.init(chartDom);
+      chart.setOption({
+        tooltip: { trigger: "axis" },
+        grid: { left: 30, right: 20, top: 30, bottom: 30 },
+        xAxis: { type: "category", data: source.map((i) => i.label), axisLabel: { color: "#d9eeff" } },
+        yAxis: { type: "value", axisLabel: { color: "#d9eeff" } },
+        series: [
+          {
+            type: "bar",
+            data: source.map((i) => i.count),
+            itemStyle: { borderRadius: [8, 8, 0, 0], color: "#4dc4ff" },
+          },
+        ],
+      });
+      window.addEventListener("resize", () => chart.resize());
+    })();
+  </script>
+{% endblock %}

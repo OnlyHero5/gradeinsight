@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}题目筛选 | GradeInsight{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">题目筛选</h1>
+        <p class="page-subtitle">考试：{{ exam.name }}。支持阈值、区间、低于/高于本题平均分。</p>
+      </div>
+      <a class="ghost-btn" href="{% url 'exam_detail' exam.id %}">返回考试详情</a>
+    </header>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="field">
+          <label for="id_question_key">题号</label>
+          {{ form.question_key }}
+          {{ form.question_key.errors }}
+        </div>
+        <div class="field">
+          <label for="id_op">条件</label>
+          {{ form.op }}
+          {{ form.op.errors }}
+        </div>
+        <div class="field">
+          <label for="id_value">分值</label>
+          {{ form.value }}
+          {{ form.value.errors }}
+        </div>
+        <div class="field">
+          <label for="id_min">最小值</label>
+          {{ form.min }}
+          {{ form.min.errors }}
+        </div>
+        <div class="field">
+          <label for="id_max">最大值</label>
+          {{ form.max }}
+          {{ form.max.errors }}
+        </div>
+        <div class="field">
+          <label for="id_include_excluded">包含未扫/缺考</label>
+          {{ form.include_excluded }}
+        </div>
+      </div>
+      <div class="action-row">
+        <button type="submit" class="btn">筛选学生</button>
+      </div>
+    </form>
+  </section>
+
+  {% if has_result %}
+    <section class="panel" style="margin-top: 14px;">
+      <header class="page-header">
+        <div>
+          <h2 class="page-title" style="font-size: 1.2rem;">命中名单（{{ matched_count }}）</h2>
+          <p class="page-subtitle">可直接生成任务清单并追踪提交。</p>
+        </div>
+      </header>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>姓名</th>
+              <th>外部学号</th>
+              <th>学生详情</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in matched_students %}
+              <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.external_id }}</td>
+                <td><a class="link-btn" href="{% url 'student_detail' student.id %}">查看</a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3">当前条件没有命中学生。</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if matched_students %}
+        <form method="post" style="margin-top: 14px;">
+          {% csrf_token %}
+          <input type="hidden" name="question_key" value="{{ form.cleaned_data.question_key }}" />
+          <input type="hidden" name="op" value="{{ form.cleaned_data.op }}" />
+          <input type="hidden" name="value" value="{{ form.cleaned_data.value|default:'' }}" />
+          <input type="hidden" name="min" value="{{ form.cleaned_data.min|default:'' }}" />
+          <input type="hidden" name="max" value="{{ form.cleaned_data.max|default:'' }}" />
+          {% if form.cleaned_data.include_excluded %}
+            <input type="hidden" name="include_excluded" value="on" />
+          {% endif %}
+          <input type="hidden" name="action" value="create_task" />
+          <div class="action-row">
+            <input type="text" name="task_name" placeholder="任务名称（可留空自动生成）" />
+            <button type="submit" class="btn">创建任务清单</button>
+          </div>
+        </form>
+      {% endif %}
+    </section>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+<tr id="assignment-{{ assignment.id }}" class="assignment-row {% if assignment.is_submitted %}assignment-submitted{% else %}assignment-pending{% endif %}">
+  <td>{{ assignment.student.name }}</td>
+  <td>{{ assignment.student.external_id }}</td>
+  <td>
+    {% if assignment.is_submitted %}
+      <span class="chip tag-good">已交</span>
+    {% else %}
+      <span class="chip tag-weak">未交</span>
+    {% endif %}
+  </td>
+  <td>
+    <button
+      class="ghost-btn"
+      hx-post="{% url 'assignment_toggle' task.id assignment.id %}"
+      hx-target="#assignment-{{ assignment.id }}"
+      hx-swap="outerHTML"
+      type="button"
+    >
+      切换状态
+    </button>
+  </td>
+</tr>

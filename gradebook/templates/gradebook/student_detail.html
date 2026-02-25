@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.name }} | GradeInsight{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">{{ student.name }}</h1>
+        <p class="page-subtitle">学号：{{ student.external_id }} · 班级：{{ student.class_name|default:'-' }}</p>
+      </div>
+      <a class="ghost-btn" href="{% url 'exam_list' %}">返回考试列表</a>
+    </header>
+
+    <div id="studentTrend" class="chart"></div>
+  </section>
+
+  <section class="layout-two" style="margin-top: 14px;">
+    <article class="panel">
+      <h2 class="page-title" style="font-size: 1.2rem;">历次考试记录</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>考试</th>
+              <th>日期</th>
+              <th>总分</th>
+              <th>排名</th>
+              <th>详情</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in score_rows %}
+              <tr>
+                <td>{{ row.exam.name }}</td>
+                <td>{{ row.exam.exam_date|default:'按导入时间' }}</td>
+                <td>{{ row.total_score|default:'-' }}</td>
+                <td>{{ row.rank_in_class|default:'-' }}</td>
+                <td><a class="link-btn" href="?exam={{ row.exam_id }}">对比题目</a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5">该学生暂无考试数据。</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel">
+      <h2 class="page-title" style="font-size: 1.2rem;">题目表现（选中考试）</h2>
+      {% if selected_row %}
+        <p class="page-subtitle">当前考试：{{ selected_row.exam.name }}</p>
+        {% if show_deltas %}
+          <div class="chip tag-weak">弱势题：{{ weak_items|length }}</div>
+          <div class="chip tag-good">良好题：{{ good_items|length }}</div>
+          <div class="chip">接近平均：{{ avg_items|length }}</div>
+
+          <div class="table-wrap" style="margin-top: 10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>题号</th>
+                  <th>个人分</th>
+                  <th>班均</th>
+                  <th>差值</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in weak_items|slice:':8' %}
+                  <tr>
+                    <td>{{ item.question_key }}</td>
+                    <td>{{ item.student_score }}</td>
+                    <td>{{ item.mean_score }}</td>
+                    <td class="tag-weak">{{ item.delta }}</td>
+                  </tr>
+                {% endfor %}
+                {% for item in good_items|slice:':8' %}
+                  <tr>
+                    <td>{{ item.question_key }}</td>
+                    <td>{{ item.student_score }}</td>
+                    <td>{{ item.mean_score }}</td>
+                    <td class="tag-good">+{{ item.delta }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="page-subtitle">该场考试不参与统计（如未扫/缺考），不展示弱势/良好题目。</p>
+        {% endif %}
+      {% else %}
+        <p class="page-subtitle">请选择一场考试查看题目表现。</p>
+      {% endif %}
+    </article>
+  </section>
+
+  <script>
+    (function () {
+      const target = document.getElementById("studentTrend");
+      if (!target || !window.echarts) {
+        return;
+      }
+      const labels = {{ trend_labels_json|safe }};
+      const scores = {{ trend_scores_json|safe }};
+      const ranks = {{ trend_ranks_json|safe }};
+      const chart = echarts.init(target);
+      chart.setOption({
+        tooltip: { trigger: "axis" },
+        legend: { data: ["总分", "排名"], textStyle: { color: "#dbeeff" } },
+        grid: { left: 34, right: 26, top: 44, bottom: 30 },
+        xAxis: { type: "category", data: labels, axisLabel: { color: "#dbeeff" } },
+        yAxis: [
+          { type: "value", name: "总分", axisLabel: { color: "#dbeeff" } },
+          { type: "value", name: "排名", inverse: true, axisLabel: { color: "#dbeeff" } },
+        ],
+        series: [
+          { name: "总分", type: "line", smooth: true, data: scores, yAxisIndex: 0, lineStyle: { color: "#7bf5cf" } },
+          { name: "排名", type: "line", smooth: true, data: ranks, yAxisIndex: 1, lineStyle: { color: "#4dc4ff" } },
+        ],
+      });
+      window.addEventListener("resize", () => chart.resize());
+    })();
+  </script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}导入成绩 | GradeInsight{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">导入考试成绩</h1>
+        <p class="page-subtitle">上传 `.xlsx` 后先预览异常，再确认入库。非数值总分将自动标记为不参与统计。</p>
+      </div>
+      <a class="ghost-btn" href="{% url 'exam_list' %}">返回考试列表</a>
+    </header>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="field">
+          <label for="id_exam_name">考试名称</label>
+          {{ form.exam_name }}
+          {{ form.exam_name.errors }}
+        </div>
+        <div class="field">
+          <label for="id_exam_date">考试日期（可选）</label>
+          {{ form.exam_date }}
+          {{ form.exam_date.errors }}
+        </div>
+        <div class="field">
+          <label for="id_file">Excel 文件</label>
+          {{ form.file }}
+          {{ form.file.errors }}
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn" type="submit">解析并预览</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

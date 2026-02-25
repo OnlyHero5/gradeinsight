@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}考试列表 | GradeInsight{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">考试列表</h1>
+        <p class="page-subtitle">查看历次考试、进入趋势分析和题目筛选。</p>
+      </div>
+      <a class="btn" href="{% url 'import_upload' %}">上传新考试</a>
+    </header>
+
+    {% if exams %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>考试</th>
+              <th>日期</th>
+              <th>导入时间</th>
+              <th>参与统计</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for exam in exams %}
+              <tr>
+                <td>{{ exam.name }}</td>
+                <td>{{ exam.exam_date|default:'未填写' }}</td>
+                <td>{{ exam.imported_at|date:'Y-m-d H:i' }}</td>
+                <td>{{ exam.participants_n }} / 排除 {{ exam.excluded_n }}</td>
+                <td>
+                  <a class="link-btn" href="{% url 'exam_detail' exam.id %}">详情</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="page-subtitle">暂无考试数据，先导入第一份 `.xlsx`。</p>
+    {% endif %}
+  </section>
+{% endblock %}

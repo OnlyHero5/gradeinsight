@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}任务清单 | GradeInsight{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">任务清单</h1>
+        <p class="page-subtitle">管理所有由题目筛选生成的补救任务。</p>
+      </div>
+      <a class="ghost-btn" href="{% url 'exam_list' %}">返回考试</a>
+    </header>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>任务</th>
+            <th>考试</th>
+            <th>题号</th>
+            <th>进度</th>
+            <th>创建时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in tasks %}
+            <tr>
+              <td>{{ task.name }}</td>
+              <td>{{ task.exam.name }}</td>
+              <td>{{ task.question_key|default:'-' }}</td>
+              <td>{{ task.submitted_count }} / {{ task.total_count }}</td>
+              <td>{{ task.created_at|date:'Y-m-d H:i' }}</td>
+              <td><a class="link-btn" href="{% url 'task_detail' task.id %}">详情</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">暂无任务，可在题目筛选页创建。</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

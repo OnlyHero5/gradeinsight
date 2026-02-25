@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual envs
+.venv/
+venv/
+
+# Django
+*.sqlite3
+media/
+staticfiles/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Build / node
+node_modules/
+
+# Worktrees
+.worktrees/
+worktrees/
+
+# Backups
+*.sql
+*.bak

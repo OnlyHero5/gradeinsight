@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}导入预览 | GradeInsight{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">导入预览</h1>
+        <p class="page-subtitle">确认数据质量后再写入数据库。</p>
+      </div>
+    </header>
+
+    <div class="metric-grid">
+      <article class="metric-card">
+        <p class="metric-label">学生数</p>
+        <p class="metric-value">{{ preview.student_count }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">题目列数</p>
+        <p class="metric-value">{{ preview.question_count }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">不参与统计人数</p>
+        <p class="metric-value">{{ preview.excluded_from_stats_count }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">ID 不一致行数</p>
+        <p class="metric-value">{{ preview.mismatched_id_count }}</p>
+      </article>
+    </div>
+
+    <p class="page-subtitle" style="margin-top: 12px;">
+      统计口径：总分为文本（如“未扫/缺考”）的记录会保留，但不会参与班级统计、题目均分和趋势计算。
+    </p>
+
+    <div class="action-row">
+      <form method="post" action="{% url 'import_confirm' staged.id %}">
+        {% csrf_token %}
+        <button class="btn" type="submit">确认入库</button>
+      </form>
+      <a class="ghost-btn" href="{% url 'import_upload' %}">返回重选</a>
+    </div>
+  </section>
+{% endblock %}

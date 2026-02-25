@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ task.name }} | GradeInsight{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">{{ task.name }}</h1>
+        <p class="page-subtitle">考试：{{ task.exam.name }} · 题号：{{ task.question_key|default:'-' }}</p>
+      </div>
+      <div class="action-row">
+        <a class="ghost-btn" href="{% url 'task_list' %}">返回任务列表</a>
+        <a class="ghost-btn" href="{% url 'task_export_pending_csv' task.id %}">导出未交 CSV</a>
+      </div>
+    </header>
+
+    <div class="metric-grid">
+      <article class="metric-card">
+        <p class="metric-label">总人数</p>
+        <p class="metric-value">{{ counts.total }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">已交</p>
+        <p class="metric-value">{{ counts.submitted }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">未交</p>
+        <p class="metric-value">{{ counts.pending }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">筛选视图</p>
+        <p class="metric-value">{{ status_filter }}</p>
+      </article>
+    </div>
+
+    <div class="action-row">
+      <a class="ghost-btn" href="?status=all">全部</a>
+      <a class="ghost-btn" href="?status=pending">仅未交</a>
+      <a class="ghost-btn" href="?status=submitted">仅已交</a>
+    </div>
+
+    <div class="table-wrap" style="margin-top: 12px;">
+      <table>
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>学号</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for assignment in assignments %}
+            {% include 'worklists/_assignment_row.html' with assignment=assignment task=task %}
+          {% empty %}
+            <tr><td colspan="4">当前筛选条件下没有学生。</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

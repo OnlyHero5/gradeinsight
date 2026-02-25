@@ -1,0 +1,7 @@
+{% if messages %}
+  <section class="flash-stack" aria-live="polite">
+    {% for message in messages %}
+      <article class="flash flash-{{ message.tags|default:'info' }}">{{ message }}</article>
+    {% endfor %}
+  </section>
+{% endif %}

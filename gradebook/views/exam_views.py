@@ -1,0 +1,40 @@
+from __future__ import annotations
+
+import json
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, render
+
+from gradebook.models import Exam, ExamQuestionStat, ExamScore
+from gradebook.services.stats_queries import exam_basic_summary, score_histogram
+
+
+@login_required
+def exam_list(request):
+    exams = Exam.objects.all().order_by("-exam_date", "-imported_at")
+    return render(request, "gradebook/exam_list.html", {"exams": exams})
+
+
+@login_required
+def exam_detail(request, exam_id: int):
+    exam = get_object_or_404(Exam, id=exam_id)
+    summary = exam_basic_summary(exam)
+    histogram = score_histogram(exam)
+
+    top_scores = (
+        ExamScore.objects.filter(exam=exam)
+        .select_related("student")
+        .exclude(total_score__isnull=True)
+        .order_by("-total_score")[:12]
+    )
+    question_stats = ExamQuestionStat.objects.filter(exam=exam).order_by("question_key")
+
+    context = {
+        "exam": exam,
+        "summary": summary,
+        "histogram_json": json.dumps(histogram, ensure_ascii=False),
+        "top_scores": top_scores,
+        "question_stats": question_stats,
+        "no_exam_date": exam.exam_date is None,
+    }
+    return render(request, "gradebook/exam_detail.html", context)
