@@ -24,5 +24,13 @@
 - 部署：`docker-compose.yml`, `docker/web/Dockerfile`, `docker/caddy/Caddyfile`
 - 运维文档：`docs/runbook/deploy.md`, `docs/runbook/backup.md`, `ops/backup_pg.sh`
 
+## 2026-02-27 全面审查（代码/安全/运维）
+- [x] 运行测试与自检（`pytest`、`manage.py check`）
+- [x] 审查 Django settings 生产安全默认值（DEBUG/SECRET_KEY/HTTPS）
+- [x] 审查任务状态切换接口的 HTTP 方法约束与 CSRF 语义
+- [x] 审查导入暂存（ExamImport）唯一约束与失败重试路径
+- [x] 审查 Docker/Caddy 部署链路（collectstatic、密钥、挂载）
+- [x] 审查仓库合规性（License、CI、样例数据/凭据）
+
 ## Open Questions
 - （无）

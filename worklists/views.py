@@ -7,6 +7,7 @@ from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from worklists.models import Task, TaskAssignment
 
@@ -69,6 +70,7 @@ def task_export_pending_csv(request, task_id: int):
 
 
 @login_required
+@require_POST
 def assignment_toggle(request, task_id: int, assignment_id: int):
     assignment = get_object_or_404(TaskAssignment.objects.select_related("student", "task"), id=assignment_id, task_id=task_id)
 

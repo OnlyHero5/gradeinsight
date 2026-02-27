@@ -77,3 +77,25 @@
 - 验证：
   - 页面 HTML 包含 `htmx:configRequest` 与 `X-CSRFToken`
   - 同一接口无 header 为 `403`，带 header 为 `200`
+
+## 2026-02-27 全面审查发现（不足点）
+
+### Critical
+- 任务状态切换接口未限制 HTTP 方法，导致 GET 也会触发“写操作”，构成 CSRF 语义漏洞（即使有登录保护也仍可被跨站触发）。
+  - 位置：`worklists/views.py` 的 `assignment_toggle()`（未做 `require_POST`）。
+- 安全默认值偏危险：`DEBUG` 默认开启、`SECRET_KEY` 默认 dev 值；如果部署时漏配环境变量，会直接以不安全姿态上线。
+  - 位置：`config/settings.py` 的 `SECRET_KEY` / `DEBUG` 默认值。
+
+### Important
+- 导入暂存（ExamImport）失败后重试路径存在潜在 500：`ExamImport.source_sha256` 是唯一键，但暂存逻辑只复用 `status=staged` 的记录；若一次导入进入 `failed`，再次上传同一文件将尝试新建记录而触发唯一约束冲突（IntegrityError）。
+  - 位置：`gradebook/views/import_views.py` 暂存查询条件 + `gradebook/models.py` 唯一约束。
+- Docker 部署链路缺少 `collectstatic`，但静态存储配置使用 `CompressedManifestStaticFilesStorage`；在“全新环境/容器内无 staticfiles 产物”的情况下，模板里 `{% static %}` 可能因 manifest 缺失而报错。
+  - 位置：`config/settings.py` 静态存储配置 + `docker/web/Dockerfile` 未运行 collectstatic + `templates/base.html` 引用静态资源。
+- `docker-compose.yml`/`.env.example` 中数据库口令为弱默认值（`gradeinsight/gradeinsight`），建议至少通过 `.env` 注入并在文档中强调更换。
+- 仓库内文档出现明文测试账号口令（`progress.md` 中的 `teacher / Teacher@123`），容易被误当生产凭据复制使用。
+- 样例 Excel 文件被提交进仓库，通常包含学生姓名/学号等信息，存在数据合规与泄漏风险（建议匿名化或放入私有存储）。
+
+### Minor
+- `docker/caddy/Caddyfile` 仅配置 `:80`，但 compose 暴露 `443:443`，容易误导部署期望（是否需要 TLS/域名站点块）。
+- 前端依赖多处 CDN（Google Fonts / unpkg / jsdelivr），部分资源未提供 SRI；在校园网/离线或供应链风险场景下不够稳。
+- 依赖版本区间未锁定（无 lockfile），构建可复现性一般；缺少 CI（如 GitHub Actions）来持续跑 `pytest`/安全检查。

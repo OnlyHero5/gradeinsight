@@ -85,3 +85,14 @@
   - `pytest -q worklists/tests/test_toggle_submission.py` -> `3 passed`
   - `pytest -q` -> `20 passed`
   - `python3 manage.py check` -> `System check identified no issues`
+
+## 2026-02-27（全面审查）
+- 验证证据：
+  - `python3 -m pytest` -> `29 passed in 6.20s`
+  - `python3 manage.py check` -> `System check identified no issues (0 silenced).`
+- 审查结论摘要（详见 `findings.md`）：
+  - `assignment_toggle` 未限制 HTTP 方法（GET 也可触发写操作）存在 CSRF 语义风险
+  - `DEBUG/SECRET_KEY` 默认值偏危险，生产漏配环境变量会以不安全姿态运行
+  - ExamImport 失败后重试的暂存逻辑可能触发唯一约束冲突（IntegrityError）
+  - Docker 部署链路缺少 `collectstatic`，与 manifest 静态存储配置存在不匹配风险
+  - 文档/样例数据中存在凭据与潜在 PII 暴露点
