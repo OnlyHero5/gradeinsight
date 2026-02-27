@@ -1,10 +1,23 @@
 {% load static %}
 <!doctype html>
-<html lang="zh-Hans">
+<html lang="zh-Hans" data-bs-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="view-transition" content="same-origin" />
     <title>{% block title %}GradeInsight{% endblock %}</title>
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem("gi-theme");
+          if (saved === "dark" || saved === "light") {
+            document.documentElement.setAttribute("data-bs-theme", saved);
+          }
+        } catch (err) {
+          // ignore
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -28,6 +41,9 @@
   </head>
   <body class="gi-body">
     <div class="gi-backdrop" aria-hidden="true"></div>
+    <div class="gi-orb gi-orb-1" aria-hidden="true"></div>
+    <div class="gi-orb gi-orb-2" aria-hidden="true"></div>
+    <div class="gi-orb gi-orb-3" aria-hidden="true"></div>
 
     {% if user.is_authenticated %}
       <nav class="navbar navbar-expand-lg gi-navbar sticky-top">
@@ -78,6 +94,9 @@
               </li>
             </ul>
             <div class="d-flex align-items-center gap-2">
+              <button id="giThemeToggle" class="gi-theme-toggle" type="button" aria-label="切换主题">
+                <i class="bi bi-moon-stars" aria-hidden="true"></i>
+              </button>
               <span class="badge rounded-pill text-bg-light border-subtle">{{ user.username }}</span>
               <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
@@ -128,6 +147,131 @@
             event.detail.headers["X-CSRFToken"] = csrfToken;
           }
         });
+
+        const themeBtn = document.getElementById("giThemeToggle");
+        const root = document.documentElement;
+
+        const updateThemeIcon = () => {
+          if (!themeBtn) {
+            return;
+          }
+          const isDark = root.getAttribute("data-bs-theme") === "dark";
+          const icon = themeBtn.querySelector("i");
+          if (icon) {
+            icon.className = isDark ? "bi bi-sun" : "bi bi-moon-stars";
+          }
+          themeBtn.setAttribute("aria-label", isDark ? "切换到浅色主题" : "切换到深色主题");
+        };
+
+        const setTheme = (next) => {
+          root.setAttribute("data-bs-theme", next);
+          try {
+            localStorage.setItem("gi-theme", next);
+          } catch (err) {
+            // ignore
+          }
+          updateThemeIcon();
+        };
+
+        updateThemeIcon();
+
+        if (themeBtn) {
+          themeBtn.addEventListener("click", () => {
+            const current = root.getAttribute("data-bs-theme") || "light";
+            const next = current === "dark" ? "light" : "dark";
+            setTheme(next);
+            window.location.reload();
+          });
+        }
+
+        const prefersReducedMotion = (() => {
+          try {
+            return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          } catch (err) {
+            return false;
+          }
+        })();
+
+        const hasNativeViewTransition = (() => {
+          try {
+            return typeof CSS !== "undefined" && CSS.supports && CSS.supports("view-transition-name: none");
+          } catch (err) {
+            return false;
+          }
+        })();
+
+        const isEligibleLink = (anchor) => {
+          if (!anchor) {
+            return false;
+          }
+          if (anchor.target && anchor.target !== "_self") {
+            return false;
+          }
+          if (anchor.hasAttribute("download")) {
+            return false;
+          }
+          if (anchor.hasAttribute("hx-get") || anchor.hasAttribute("hx-post") || anchor.hasAttribute("hx-boost")) {
+            return false;
+          }
+
+          const rawHref = anchor.getAttribute("href");
+          if (!rawHref) {
+            return false;
+          }
+          if (
+            rawHref.startsWith("#")
+            || rawHref.startsWith("mailto:")
+            || rawHref.startsWith("tel:")
+            || rawHref.startsWith("javascript:")
+          ) {
+            return false;
+          }
+
+          const url = new URL(anchor.href, window.location.href);
+          if (url.origin !== window.location.origin) {
+            return false;
+          }
+          if (url.href === window.location.href) {
+            return false;
+          }
+          if (url.hash && url.pathname === window.location.pathname && url.search === window.location.search) {
+            return false;
+          }
+          return true;
+        };
+
+        if (!prefersReducedMotion && !hasNativeViewTransition) {
+          document.addEventListener(
+            "click",
+            (event) => {
+              if (event.defaultPrevented) {
+                return;
+              }
+              if (event.button !== 0) {
+                return;
+              }
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+              }
+
+              const anchor = event.target.closest ? event.target.closest("a") : null;
+              if (!isEligibleLink(anchor)) {
+                return;
+              }
+
+              event.preventDefault();
+              document.body.classList.add("gi-page-leave");
+              window.setTimeout(() => {
+                window.location.href = anchor.href;
+              }, 170);
+            },
+            { capture: true },
+          );
+
+          window.addEventListener("pageshow", () => {
+            document.body.classList.remove("gi-page-leave");
+          });
+        }
       })();
     </script>
     {% block extra_js %}{% endblock %}

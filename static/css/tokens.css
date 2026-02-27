@@ -1,34 +1,134 @@
+/*
+ * tokens.css — GradeInsight Design Tokens
+ * Style: Glassmorphism + Neumorphism (modern, high-contrast, iPad-friendly)
+ * Stack: Django templates + Bootstrap 5.3 (CDN), no npm/node build step.
+ *
+ * Default theme: Light.
+ * Optional: set `data-bs-theme="dark"` on <html> to enable dark mode.
+ */
+
 :root {
-  --gi-bg: #edf4ff;
-  --gi-bg-soft: #f7fbff;
-  --gi-text: #12243a;
-  --gi-muted: #5f7289;
-  --gi-primary: #0f4ea8;
-  --gi-primary-strong: #0a3e87;
-  --gi-cyan: #10a7bf;
-  --gi-accent: #f3b64c;
-  --gi-danger: #cf4b63;
-  --gi-success: #1f9a78;
+  /* === Shape & motion === */
+  --gi-radius-lg: 26px;
+  --gi-radius-md: 18px;
+  --gi-radius-sm: 14px;
+  --gi-blur-lg: 30px;
+  --gi-blur-md: 18px;
+  --gi-blur-sm: 12px;
+  --gi-ease: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --gi-dur: 180ms;
 
-  --gi-glass: rgba(255, 255, 255, 0.62);
-  --gi-glass-strong: rgba(255, 255, 255, 0.8);
-  --gi-border: rgba(255, 255, 255, 0.74);
-  --gi-shadow: 0 20px 44px rgba(18, 36, 58, 0.14);
-  --gi-shadow-sm: 0 10px 24px rgba(18, 36, 58, 0.1);
+  /* === Typography === */
+  --gi-font-display: "Space Grotesk", "Noto Sans SC", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gi-font-body: "Manrope", "Noto Sans SC", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gi-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
 
-  --gi-radius-lg: 24px;
-  --gi-radius-md: 16px;
-  --gi-radius-sm: 12px;
+/* ============================================
+   Light theme (default)
+   ============================================ */
+:root,
+html[data-bs-theme="light"] {
+  /* === Background layers === */
+  --gi-bg-base: #f7f9ff;
+  --gi-bg-soft: #ffffff;
+  --gi-bg-tint: #eef2ff;
 
-  --gi-font-display: "Space Grotesk", "Noto Sans SC", sans-serif;
-  --gi-font-body: "Manrope", "Noto Sans SC", sans-serif;
-  --gi-font-mono: "JetBrains Mono", monospace;
+  /* === Text === */
+  --gi-text: #0f172a;
+  --gi-text-muted: rgba(15, 23, 42, 0.64);
+  --gi-text-faint: rgba(15, 23, 42, 0.46);
 
+  /* === Brand & semantic === */
+  --gi-primary: #6366f1;
+  --gi-primary-strong: #4f46e5;
+  --gi-cyan: #22d3ee;
+  --gi-accent: #f59e0b;
+  --gi-danger: #ef4444;
+  --gi-success: #10b981;
+  --gi-purple: #a78bfa;
+
+  /* === Glass surfaces === */
+  --gi-glass: rgba(255, 255, 255, 0.58);
+  --gi-glass-strong: rgba(255, 255, 255, 0.78);
+  --gi-glass-nav: rgba(255, 255, 255, 0.52);
+  --gi-border: rgba(15, 23, 42, 0.10);
+  --gi-border-bright: rgba(255, 255, 255, 0.78);
+
+  /* === Depth (neumorphism-friendly) === */
+  --gi-shadow: 0 30px 70px rgba(15, 23, 42, 0.12);
+  --gi-shadow-sm: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --gi-neu-shadow: 14px 14px 32px rgba(15, 23, 42, 0.08), -14px -14px 32px rgba(255, 255, 255, 0.9);
+  --gi-neu-shadow-sm: 10px 10px 24px rgba(15, 23, 42, 0.07), -10px -10px 24px rgba(255, 255, 255, 0.92);
+
+  /* === Focus ring === */
+  --gi-focus-ring: rgba(99, 102, 241, 0.35);
+
+  /* === Chart.js theme helpers === */
+  --gi-chart-text: rgba(15, 23, 42, 0.72);
+  --gi-chart-grid: rgba(15, 23, 42, 0.10);
+  --gi-chart-tooltip-bg: rgba(15, 23, 42, 0.92);
+  --gi-chart-tooltip-title: #ffffff;
+  --gi-chart-tooltip-body: rgba(255, 255, 255, 0.82);
+
+  /* === Bootstrap overrides === */
   --bs-body-font-family: var(--gi-font-body);
   --bs-body-color: var(--gi-text);
   --bs-body-bg: transparent;
   --bs-primary: var(--gi-primary);
-  --bs-primary-rgb: 15, 78, 168;
+  --bs-primary-rgb: 99, 102, 241;
+  --bs-border-color: rgba(15, 23, 42, 0.12);
+  --bs-secondary-color: var(--gi-text-muted);
+  --bs-tertiary-color: var(--gi-text-faint);
+}
+
+/* ============================================
+   Dark theme (optional)
+   ============================================ */
+html[data-bs-theme="dark"] {
+  --gi-bg-base: #0a0f1e;
+  --gi-bg-soft: #0f172a;
+  --gi-bg-tint: #111b33;
+
+  --gi-text: rgba(255, 255, 255, 0.92);
+  --gi-text-muted: rgba(255, 255, 255, 0.60);
+  --gi-text-faint: rgba(255, 255, 255, 0.46);
+
+  --gi-primary: #60a5fa;
+  --gi-primary-strong: #3b82f6;
+  --gi-cyan: #22d3ee;
+  --gi-accent: #f59e0b;
+  --gi-danger: #f87171;
+  --gi-success: #34d399;
+  --gi-purple: #a78bfa;
+
+  --gi-glass: rgba(255, 255, 255, 0.06);
+  --gi-glass-strong: rgba(255, 255, 255, 0.10);
+  --gi-glass-nav: rgba(10, 15, 30, 0.72);
+  --gi-border: rgba(255, 255, 255, 0.12);
+  --gi-border-bright: rgba(255, 255, 255, 0.22);
+
+  --gi-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --gi-shadow-sm: 0 12px 28px rgba(0, 0, 0, 0.40);
+  --gi-neu-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  --gi-neu-shadow-sm: 0 12px 28px rgba(0, 0, 0, 0.35);
+
+  --gi-focus-ring: rgba(59, 130, 246, 0.45);
+
+  --gi-chart-text: rgba(255, 255, 255, 0.70);
+  --gi-chart-grid: rgba(255, 255, 255, 0.08);
+  --gi-chart-tooltip-bg: rgba(10, 15, 30, 0.92);
+  --gi-chart-tooltip-title: #ffffff;
+  --gi-chart-tooltip-body: rgba(255, 255, 255, 0.78);
+
+  --bs-body-font-family: var(--gi-font-body);
+  --bs-body-color: var(--gi-text);
+  --bs-body-bg: transparent;
+  --bs-primary: var(--gi-primary-strong);
+  --bs-primary-rgb: 59, 130, 246;
+  --bs-border-color: rgba(255, 255, 255, 0.12);
+  --bs-secondary-color: var(--gi-text-muted);
+  --bs-tertiary-color: var(--gi-text-faint);
 }
 
 * {
@@ -40,10 +140,11 @@ body {
   min-height: 100vh;
   font-family: var(--gi-font-body);
   color: var(--gi-text);
+  background-color: var(--gi-bg-base);
 }
 
 :focus-visible {
-  outline: 3px solid rgba(16, 167, 191, 0.45);
+  outline: 3px solid var(--gi-focus-ring);
   outline-offset: 2px;
 }
 

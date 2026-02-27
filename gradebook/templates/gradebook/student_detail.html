@@ -188,6 +188,41 @@
         return;
       }
 
+      const styles = getComputedStyle(document.documentElement);
+      const getVar = (name, fallback) => {
+        const value = styles.getPropertyValue(name).trim();
+        return value || fallback;
+      };
+
+      const hexToRgba = (hex, alpha) => {
+        const raw = String(hex || '').trim();
+        if (!raw.startsWith('#')) {
+          return raw;
+        }
+        const normalized = raw.slice(1);
+        if (normalized.length === 3) {
+          const r = parseInt(normalized[0] + normalized[0], 16);
+          const g = parseInt(normalized[1] + normalized[1], 16);
+          const b = parseInt(normalized[2] + normalized[2], 16);
+          return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        if (normalized.length === 6) {
+          const r = parseInt(normalized.slice(0, 2), 16);
+          const g = parseInt(normalized.slice(2, 4), 16);
+          const b = parseInt(normalized.slice(4, 6), 16);
+          return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        return raw;
+      };
+
+      const primary = getVar('--gi-primary-strong', getVar('--gi-primary', '#6366f1'));
+      const accent = getVar('--gi-accent', '#f59e0b');
+      const textColor = getVar('--gi-chart-text', 'rgba(15, 23, 42, 0.72)');
+      const gridColor = getVar('--gi-chart-grid', 'rgba(15, 23, 42, 0.10)');
+      const tooltipBg = getVar('--gi-chart-tooltip-bg', 'rgba(15, 23, 42, 0.92)');
+      const tooltipTitle = getVar('--gi-chart-tooltip-title', '#ffffff');
+      const tooltipBody = getVar('--gi-chart-tooltip-body', 'rgba(255, 255, 255, 0.82)');
+
       new Chart(target, {
         type: 'line',
         data: {
@@ -196,8 +231,8 @@
             {
               label: '总分',
               data: scores,
-              borderColor: '#0f4ea8',
-              backgroundColor: 'rgba(15, 78, 168, 0.15)',
+              borderColor: primary,
+              backgroundColor: hexToRgba(primary, 0.16),
               borderWidth: 3,
               yAxisID: 'yScore',
               tension: 0.3,
@@ -205,8 +240,8 @@
             {
               label: '排名',
               data: ranks,
-              borderColor: '#f3b64c',
-              backgroundColor: 'rgba(243, 182, 76, 0.18)',
+              borderColor: accent,
+              backgroundColor: hexToRgba(accent, 0.14),
               borderWidth: 3,
               yAxisID: 'yRank',
               tension: 0.3,
@@ -218,25 +253,29 @@
           maintainAspectRatio: false,
           animation: { duration: 280 },
           plugins: {
-            tooltip: { backgroundColor: 'rgba(18, 36, 58, 0.9)' },
-            legend: { labels: { color: '#28435f' } },
+            tooltip: {
+              backgroundColor: tooltipBg,
+              titleColor: tooltipTitle,
+              bodyColor: tooltipBody,
+            },
+            legend: { labels: { color: textColor } },
           },
           scales: {
-            x: { ticks: { color: '#28435f' }, grid: { color: 'rgba(40, 67, 95, 0.1)' } },
+            x: { ticks: { color: textColor }, grid: { color: gridColor } },
             yScore: {
               type: 'linear',
               position: 'left',
-              ticks: { color: '#28435f' },
-              grid: { color: 'rgba(40, 67, 95, 0.1)' },
-              title: { display: true, text: '总分', color: '#28435f' },
+              ticks: { color: textColor },
+              grid: { color: gridColor },
+              title: { display: true, text: '总分', color: textColor },
             },
             yRank: {
               type: 'linear',
               reverse: true,
               position: 'right',
-              ticks: { color: '#28435f' },
+              ticks: { color: textColor },
               grid: { display: false },
-              title: { display: true, text: '排名', color: '#28435f' },
+              title: { display: true, text: '排名', color: textColor },
             },
           },
         },

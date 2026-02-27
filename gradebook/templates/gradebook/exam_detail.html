@@ -216,9 +216,26 @@
       const components = JSON.parse('{{ components_json|escapejs }}');
       const questionFocus = JSON.parse('{{ question_focus_json|escapejs }}');
 
-      const textColor = '#28435f';
-      const gridColor = 'rgba(40, 67, 95, 0.15)';
-      const accent = ['#0f4ea8', '#10a7bf', '#f3b64c', '#cf4b63', '#4b7bec', '#1f9a78'];
+      const styles = getComputedStyle(document.documentElement);
+      const getVar = (name, fallback) => {
+        const value = styles.getPropertyValue(name).trim();
+        return value || fallback;
+      };
+
+      const textColor = getVar('--gi-chart-text', 'rgba(15, 23, 42, 0.72)');
+      const gridColor = getVar('--gi-chart-grid', 'rgba(15, 23, 42, 0.10)');
+      const tooltipBg = getVar('--gi-chart-tooltip-bg', 'rgba(15, 23, 42, 0.92)');
+      const tooltipTitle = getVar('--gi-chart-tooltip-title', '#ffffff');
+      const tooltipBody = getVar('--gi-chart-tooltip-body', 'rgba(255, 255, 255, 0.82)');
+
+      const accent = [
+        getVar('--gi-primary-strong', getVar('--gi-primary', '#6366f1')),
+        getVar('--gi-cyan', '#22d3ee'),
+        getVar('--gi-accent', '#f59e0b'),
+        getVar('--gi-danger', '#ef4444'),
+        getVar('--gi-purple', '#a78bfa'),
+        getVar('--gi-success', '#10b981'),
+      ];
 
       const baseOptions = {
         animation: { duration: 300 },
@@ -226,7 +243,11 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { labels: { color: textColor } },
-          tooltip: { backgroundColor: 'rgba(18, 36, 58, 0.9)' },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: tooltipTitle,
+            bodyColor: tooltipBody,
+          },
         },
       };
 
