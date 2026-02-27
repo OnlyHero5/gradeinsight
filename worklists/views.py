@@ -31,11 +31,15 @@ def task_detail(request, task_id: int):
     elif status_filter == "pending":
         assignments = assignments.filter(submitted_at__isnull=True)
 
+    agg = TaskAssignment.objects.filter(task=task).aggregate(
+        total=Count("id"),
+        submitted=Count("id", filter=Q(submitted_at__isnull=False)),
+    )
     counts = {
-        "total": TaskAssignment.objects.filter(task=task).count(),
-        "submitted": TaskAssignment.objects.filter(task=task).exclude(submitted_at__isnull=True).count(),
+        "total": agg["total"],
+        "submitted": agg["submitted"],
+        "pending": agg["total"] - agg["submitted"],
     }
-    counts["pending"] = counts["total"] - counts["submitted"]
 
     context = {
         "task": task,

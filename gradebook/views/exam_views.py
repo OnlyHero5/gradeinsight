@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, render
 
 from gradebook.models import Exam, ExamQuestionStat, ExamScore
 from gradebook.services.exam_analytics import build_exam_insight_pack
+from gradebook.services.number_utils import question_key_sort_key
 from gradebook.services.stats_queries import exam_basic_summary, score_histogram
 
 
@@ -30,7 +31,10 @@ def exam_detail(request, exam_id: int):
         .exclude(total_score__isnull=True)
         .order_by("-total_score")[:12]
     )
-    question_stats = ExamQuestionStat.objects.filter(exam=exam).order_by("question_key")
+    question_stats = sorted(
+        ExamQuestionStat.objects.filter(exam=exam),
+        key=lambda s: question_key_sort_key(s.question_key),
+    )
 
     context = {
         "exam": exam,

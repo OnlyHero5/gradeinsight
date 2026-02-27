@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from gradebook.forms import QuestionFilterForm
 from gradebook.models import Exam, ExamQuestionScore, ExamQuestionStat, Student
+from gradebook.services.number_utils import question_key_sort_key
 from gradebook.services.question_filter import filter_students_by_question_rule
 from worklists.models import Task, TaskAssignment
 
@@ -64,7 +65,7 @@ def _load_question_keys(exam_id: int) -> list[str]:
         keys = list(
             ExamQuestionScore.objects.filter(exam_id=exam_id).values_list("question_key", flat=True).distinct()
         )
-    keys.sort()
+    keys.sort(key=question_key_sort_key)
     return keys
 
 

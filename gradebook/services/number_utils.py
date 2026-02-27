@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import re
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
+
+_QUESTION_KEY_RE = re.compile(r"^(\d+)(?:\((\d+)\))?$")
 
 TWO_DECIMAL = Decimal("0.01")
 
@@ -37,3 +40,10 @@ def to_int(value: Any) -> int | None:
 
 def quantize_two(value: Decimal) -> Decimal:
     return value.quantize(TWO_DECIMAL, rounding=ROUND_HALF_UP)
+
+
+def question_key_sort_key(key: str) -> tuple[int, int]:
+    m = _QUESTION_KEY_RE.match(key)
+    if m:
+        return int(m.group(1)), int(m.group(2) or 0)
+    return (0, 0)

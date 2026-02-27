@@ -106,6 +106,6 @@ class ExamImport(models.Model):
     exam_name = models.CharField(max_length=255)
     exam_date = models.DateField(null=True, blank=True)
     preview_json = models.JSONField(default=dict)
-    payload = models.BinaryField(default=bytes, blank=True)
+    payload = models.BinaryField(default=b"", blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=STATUS_STAGED)
     error = models.TextField(blank=True)

@@ -25,7 +25,7 @@ def rebuild_question_stats(exam: Exam) -> None:
     for question_key, score_value in rows:
         if score_value is None:
             continue
-        question_scores[question_key].append(Decimal(score_value))
+        question_scores[question_key].append(score_value)
 
     ExamQuestionStat.objects.filter(exam=exam).delete()
 
@@ -63,7 +63,7 @@ def exam_basic_summary(exam: Exam) -> dict[str, Decimal | int | None]:
             "min": None,
         }
 
-    decimals = [Decimal(item) for item in score_values]
+    decimals = list(score_values)
     ordered = sorted(decimals)
     count = len(ordered)
     mean_value = quantize_two(sum(ordered) / count)
@@ -90,7 +90,7 @@ def score_histogram(exam: Exam, step: int = 10) -> list[dict[str, int | str]]:
 
     bins: dict[tuple[int, int], int] = defaultdict(int)
     for value in values:
-        score = int(Decimal(value))
+        score = int(value)
         left = (score // step) * step
         right = left + step
         bins[(left, right)] += 1

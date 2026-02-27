@@ -5,7 +5,7 @@ from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 from typing import Iterable
 
 from gradebook.models import Exam, ExamQuestionStat, ExamScore
-from gradebook.services.number_utils import quantize_two
+from gradebook.services.number_utils import question_key_sort_key, quantize_two
 
 
 @dataclass(frozen=True)
@@ -30,7 +30,7 @@ def build_exam_insight_pack(exam: Exam) -> dict:
         .select_related("student")
         .order_by("total_score", "student_id")
     )
-    total_scores = [Decimal(row.total_score) for row in score_rows if row.total_score is not None]
+    total_scores = [row.total_score for row in score_rows if row.total_score is not None]
     ordered_scores = sorted(total_scores)
 
     return {
@@ -121,8 +121,8 @@ def _build_dispersion(scores: list[Decimal]) -> dict[str, Decimal | None]:
 
 
 def _build_component_means(score_rows: list[ExamScore]) -> dict[str, Decimal | None]:
-    objective_values = [Decimal(row.objective_score) for row in score_rows if row.objective_score is not None]
-    subjective_values = [Decimal(row.subjective_score) for row in score_rows if row.subjective_score is not None]
+    objective_values = [row.objective_score for row in score_rows if row.objective_score is not None]
+    subjective_values = [row.subjective_score for row in score_rows if row.subjective_score is not None]
 
     return {
         "objective_mean": _mean_or_none(objective_values),
@@ -138,9 +138,10 @@ def _mean_or_none(values: list[Decimal]) -> Decimal | None:
 
 def _build_question_focus(exam: Exam) -> dict[str, list[dict[str, str | Decimal]]]:
     rows = list(ExamQuestionStat.objects.filter(exam=exam).exclude(mean_score__isnull=True))
-    ordered = sorted(rows, key=lambda item: item.mean_score or Decimal("0"))
+    ordered = sorted(rows, key=lambda item: (item.mean_score or Decimal("0"), question_key_sort_key(item.question_key)))
     weak = ordered[:6]
-    strong = list(reversed(ordered[-6:]))
+    strong = list(reversed(ordered[len(weak):]))
+    strong = strong[:6]
 
     return {
         "weak": [{"question_key": row.question_key, "mean_score": row.mean_score} for row in weak],

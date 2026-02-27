@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from decimal import Decimal
 from io import BytesIO
 
 import xlrd
@@ -59,7 +60,7 @@ def _parse_student_block(sheet: xlrd.sheet.Sheet, start_row: int) -> ParsedStude
     external_id = match.group("external_id").strip()
     class_name = _extract_class_name(_cell_text(sheet, start_row + 1, 0))
 
-    question_scores: dict[str, object] = {}
+    question_scores: dict[str, Decimal | None] = {}
     total_raw = ""
     total_score = None
 

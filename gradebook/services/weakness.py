@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.conf import settings
 
 from gradebook.models import ExamQuestionScore, ExamQuestionStat, ExamScore
+from gradebook.services.number_utils import question_key_sort_key
 
 EPS = Decimal(str(getattr(settings, "EPSILON_STR", "0.01")))
 
@@ -57,5 +58,5 @@ def build_question_deltas(exam_id: int, student_id: int) -> tuple[bool, list[Que
             )
         )
 
-    deltas.sort(key=lambda item: item.delta)
+    deltas.sort(key=lambda item: (item.delta, question_key_sort_key(item.question_key)))
     return True, deltas

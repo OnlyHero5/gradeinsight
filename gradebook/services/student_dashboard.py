@@ -86,7 +86,7 @@ def _valid_total_scores(score_rows: list[ExamScore]) -> list[Decimal]:
     for row in score_rows:
         if row.excluded_from_stats or row.total_score is None:
             continue
-        values.append(Decimal(row.total_score))
+        values.append(row.total_score)
     return values
 
 
