@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
+DATASET_DIR = Path("测试数据集")
+
 
 @pytest.mark.django_db
 def test_import_upload_returns_preview(client) -> None:
@@ -14,9 +16,7 @@ def test_import_upload_returns_preview(client) -> None:
     user_model.objects.create_user(username="t", password="p")
     assert client.login(username="t", password="p")
 
-    payload = Path(
-        "2025-2026学年度第一学期期末考试【八年级】(英语)-八年级7班.xlsx"
-    ).read_bytes()
+    payload = (DATASET_DIR / "2025-2026学年度第一学期期末考试【八年级】(英语)-八年级7班.xlsx").read_bytes()
     upload = SimpleUploadedFile(
         "sample.xlsx",
         payload,
@@ -44,9 +44,7 @@ def test_import_upload_accepts_xls(client) -> None:
     user_model.objects.create_user(username="t2", password="p")
     assert client.login(username="t2", password="p")
 
-    payload = Path(
-        "2025-2026学年度第一学期期末考试【八年级】-英语-八7班-单科成绩单.xls"
-    ).read_bytes()
+    payload = (DATASET_DIR / "2025-2026学年度第一学期期末考试【八年级】-英语-八7班-单科成绩单.xls").read_bytes()
     upload = SimpleUploadedFile(
         "sample.xls",
         payload,

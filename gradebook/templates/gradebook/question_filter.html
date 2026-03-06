@@ -13,43 +13,47 @@
       <a class="btn btn-gi-ghost" href="{% url 'exam_detail' exam.id %}">返回考试详情</a>
     </div>
 
-    <form method="post" class="row g-3 mt-1">
-      {% csrf_token %}
-      <div class="col-md-4">
-        <label class="form-label" for="id_question_key">题号</label>
-        {{ form.question_key }}
-        {{ form.question_key.errors }}
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="id_op">条件</label>
-        {{ form.op }}
-        {{ form.op.errors }}
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="id_value">分值</label>
-        {{ form.value }}
-        {{ form.value.errors }}
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="id_min">最小值</label>
-        {{ form.min }}
-        {{ form.min.errors }}
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="id_max">最大值</label>
-        {{ form.max }}
-        {{ form.max.errors }}
-      </div>
-      <div class="col-md-4 d-flex align-items-center">
-        <div class="form-check mt-4">
-          {{ form.include_excluded }}
-          <label class="form-check-label" for="id_include_excluded">包含未扫/缺考</label>
+    {% if question_filter_available %}
+      <form method="post" class="row g-3 mt-1">
+        {% csrf_token %}
+        <div class="col-md-4">
+          <label class="form-label" for="id_question_key">题号</label>
+          {{ form.question_key }}
+          {{ form.question_key.errors }}
         </div>
-      </div>
-      <div class="col-12">
-        <button type="submit" class="btn btn-gi-primary">筛选学生</button>
-      </div>
-    </form>
+        <div class="col-md-4">
+          <label class="form-label" for="id_op">条件</label>
+          {{ form.op }}
+          {{ form.op.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="id_value">分值</label>
+          {{ form.value }}
+          {{ form.value.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="id_min">最小值</label>
+          {{ form.min }}
+          {{ form.min.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="id_max">最大值</label>
+          {{ form.max }}
+          {{ form.max.errors }}
+        </div>
+        <div class="col-md-4 d-flex align-items-center">
+          <div class="form-check mt-4">
+            {{ form.include_excluded }}
+            <label class="form-check-label" for="id_include_excluded">包含未扫/缺考</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-gi-primary">筛选学生</button>
+        </div>
+      </form>
+    {% else %}
+      <div class="alert alert-info mt-3 mb-0">该考试不含题目明细，无法按题号筛选学生。</div>
+    {% endif %}
   </section>
 
   {% if has_result %}

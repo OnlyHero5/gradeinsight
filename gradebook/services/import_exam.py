@@ -96,19 +96,37 @@ def _write_exam_rows(exam: Exam, parsed: ParsedExam) -> None:
 
 
 def _upsert_student(row: ParsedStudentRow) -> Student:
-    student, created = Student.objects.get_or_create(
-        external_id=row.external_id,
-        defaults={
-            "name": row.name,
-            "admission_ticket": row.admission_ticket,
-            "custom_exam_id": row.custom_exam_id,
-            "class_name": row.class_name,
-        },
+    stable_external_id = row.external_id and not row.external_id.startswith("name-only:")
+    if stable_external_id:
+        student, created = Student.objects.get_or_create(
+            external_id=row.external_id,
+            defaults={
+                "name": row.name,
+                "admission_ticket": row.admission_ticket,
+                "custom_exam_id": row.custom_exam_id,
+                "class_name": row.class_name,
+            },
+        )
+
+        if created:
+            return student
+
+        return _update_student(student, row)
+
+    student = Student.objects.filter(name=row.name).order_by("id").first()
+    if student is not None:
+        return _update_student(student, row)
+
+    generated_external_id = row.external_id or f"name-only:{row.name}"
+    return Student.objects.create(
+        external_id=generated_external_id,
+        name=row.name,
+        admission_ticket=row.admission_ticket,
+        custom_exam_id=row.custom_exam_id,
+        class_name=row.class_name,
     )
 
-    if created:
-        return student
-
+def _update_student(student: Student, row: ParsedStudentRow) -> Student:
     dirty = False
     if student.name != row.name:
         student.name = row.name

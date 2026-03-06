@@ -15,12 +15,13 @@ from worklists.models import Task, TaskAssignment
 def question_filter(request, exam_id: int):
     exam = get_object_or_404(Exam, id=exam_id)
     question_keys = _load_question_keys(exam_id)
+    question_filter_available = bool(question_keys)
     form = QuestionFilterForm(request.POST or None, question_keys=question_keys)
 
     matched_students = []
     matched_ids: list[int] = []
 
-    if request.method == "POST" and form.is_valid():
+    if question_filter_available and request.method == "POST" and form.is_valid():
         rule = _build_rule(form.cleaned_data)
         matched_ids = filter_students_by_question_rule(
             exam_id=exam.id,
@@ -52,9 +53,10 @@ def question_filter(request, exam_id: int):
     context = {
         "exam": exam,
         "form": form,
+        "question_filter_available": question_filter_available,
         "matched_students": matched_students,
         "matched_count": len(matched_students),
-        "has_result": request.method == "POST" and form.is_valid(),
+        "has_result": question_filter_available and request.method == "POST" and form.is_valid(),
     }
     return render(request, "gradebook/question_filter.html", context)
 

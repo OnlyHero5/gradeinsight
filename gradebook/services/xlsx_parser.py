@@ -8,11 +8,13 @@ from io import BytesIO
 from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .number_utils import to_decimal, to_int
 
 QUESTION_KEY_PATTERN = re.compile(r"^\d+(?:\(\d+\))?$")
+TOTAL_SCORE_HEADERS = ("总分", "得分")
 
 
 @dataclass(frozen=True)
@@ -42,39 +44,117 @@ class ParsedExam:
 
 
 def parse_exam_xlsx(file_bytes: bytes) -> ParsedExam:
-    worksheet = _load_sheet(file_bytes)
-    header_row = _find_header_row(worksheet)
-    header_map = _build_header_map(worksheet, header_row)
-    question_columns = _extract_question_columns(header_map)
-    rows, excluded_count, mismatch_count = _parse_rows(worksheet, header_row, header_map, question_columns)
-
-    return ParsedExam(
-        question_keys=[question_key for question_key, _ in question_columns],
-        rows=rows,
-        student_count=len(rows),
-        excluded_from_stats_count=excluded_count,
-        mismatched_id_count=mismatch_count,
-    )
+    workbook = _load_workbook(file_bytes)
+    try:
+        return _parse_detail_workbook(workbook)
+    except ValueError:
+        try:
+            return _parse_total_only_workbook(workbook)
+        except ValueError as exc:
+            raise ValueError("无法识别 .xlsx 结构：未找到题目明细结构，也未找到可用的汇总/简表结构") from exc
 
 
-def _load_sheet(file_bytes: bytes) -> Worksheet:
+def _load_workbook(file_bytes: bytes) -> Workbook:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-        workbook = load_workbook(BytesIO(file_bytes), data_only=True)
+        return load_workbook(BytesIO(file_bytes), data_only=True)
 
+
+def _parse_detail_workbook(workbook: Workbook) -> ParsedExam:
+    for worksheet in _iter_detail_candidate_sheets(workbook):
+        try:
+            header_row = _find_detail_header_row(worksheet)
+            header_map = _build_header_map(worksheet, header_row)
+            question_columns = _extract_question_columns(header_map)
+            rows, excluded_count, mismatch_count = _parse_detail_rows(
+                worksheet,
+                header_row,
+                header_map,
+                question_columns,
+            )
+            return ParsedExam(
+                question_keys=[question_key for question_key, _ in question_columns],
+                rows=rows,
+                student_count=len(rows),
+                excluded_from_stats_count=excluded_count,
+                mismatched_id_count=mismatch_count,
+            )
+        except ValueError:
+            continue
+
+    raise ValueError("未找到题目明细结构")
+
+
+def _parse_total_only_workbook(workbook: Workbook) -> ParsedExam:
+    for worksheet in _iter_total_only_candidate_sheets(workbook):
+        try:
+            header_row = _find_total_only_header_row(worksheet)
+            header_map = _build_header_map(worksheet, header_row)
+            rows, excluded_count, mismatch_count = _parse_total_only_rows(worksheet, header_row, header_map)
+            return ParsedExam(
+                question_keys=[],
+                rows=rows,
+                student_count=len(rows),
+                excluded_from_stats_count=excluded_count,
+                mismatched_id_count=mismatch_count,
+            )
+        except ValueError:
+            continue
+
+    raise ValueError("未找到可用的汇总/简表结构")
+
+
+def _iter_detail_candidate_sheets(workbook: Workbook) -> list[Worksheet]:
+    sheets: list[Worksheet] = []
     if "得分明细" in workbook.sheetnames:
-        return workbook["得分明细"]
-    return workbook[workbook.sheetnames[0]]
+        sheets.append(workbook["得分明细"])
+    sheets.extend([worksheet for worksheet in workbook.worksheets if worksheet not in sheets])
+    return sheets
 
 
-def _find_header_row(worksheet: Worksheet) -> int:
+def _iter_total_only_candidate_sheets(workbook: Workbook) -> list[Worksheet]:
+    sheets: list[Worksheet] = []
+    preferred_titles = ("班级英语成绩汇总", "班级成绩汇总", "班级英语成绩简表", "班级成绩简表")
+
+    for title in preferred_titles:
+        if title in workbook.sheetnames:
+            sheets.append(workbook[title])
+
+    seen_titles = {sheet.title for sheet in sheets}
+    for worksheet in workbook.worksheets:
+        if worksheet.title not in seen_titles and "汇总" in worksheet.title:
+            sheets.append(worksheet)
+            seen_titles.add(worksheet.title)
+    for worksheet in workbook.worksheets:
+        if worksheet.title not in seen_titles and "简表" in worksheet.title:
+            sheets.append(worksheet)
+            seen_titles.add(worksheet.title)
+    for worksheet in workbook.worksheets:
+        if worksheet.title not in seen_titles:
+            sheets.append(worksheet)
+            seen_titles.add(worksheet.title)
+
+    return sheets
+
+
+def _find_detail_header_row(worksheet: Worksheet) -> int:
     max_scan_rows = min(worksheet.max_row, 12)
     for row in range(1, max_scan_rows + 1):
         values = {str(worksheet.cell(row=row, column=col).value or "").strip() for col in range(1, 80)}
         if {"姓名", "总分"}.issubset(values):
             return row
 
-    raise ValueError("无法定位表头，请确认文件包含“姓名/总分”列")
+    raise ValueError("无法定位明细考试表头")
+
+
+def _find_total_only_header_row(worksheet: Worksheet) -> int:
+    max_scan_rows = min(worksheet.max_row, 12)
+    for row in range(1, max_scan_rows + 1):
+        values = {str(worksheet.cell(row=row, column=col).value or "").strip() for col in range(1, 80)}
+        if "姓名" in values and any(header in values for header in TOTAL_SCORE_HEADERS):
+            return row
+
+    raise ValueError("无法定位仅总分考试表头")
 
 
 def _build_header_map(worksheet: Worksheet, header_row: int) -> dict[str, int]:
@@ -97,7 +177,14 @@ def _extract_question_columns(header_map: dict[str, int]) -> list[tuple[str, int
     return question_items
 
 
-def _parse_rows(
+def _find_total_column(header_map: dict[str, int]) -> int | None:
+    for header in TOTAL_SCORE_HEADERS:
+        if header in header_map:
+            return header_map[header]
+    return None
+
+
+def _parse_detail_rows(
     worksheet: Worksheet,
     header_row: int,
     header_map: dict[str, int],
@@ -135,22 +222,81 @@ def _parse_rows(
             for question_key, column in question_columns
         }
 
-        row = ParsedStudentRow(
-            name=name,
-            external_id=external_id,
-            admission_ticket=admission_ticket,
-            custom_exam_id=custom_exam_id,
-            class_name=_read_text(worksheet, row_index, header_map.get("班级")),
-            total_score=total_score,
-            total_raw=total_raw,
-            objective_score=to_decimal(_read_value(worksheet, row_index, header_map.get("客观分"))),
-            subjective_score=to_decimal(_read_value(worksheet, row_index, header_map.get("主观分"))),
-            rank_in_class=to_int(_read_value(worksheet, row_index, header_map.get("班次"))),
-            excluded_from_stats=excluded,
-            exclude_reason=exclude_reason,
-            question_scores=question_scores,
+        rows.append(
+            ParsedStudentRow(
+                name=name,
+                external_id=external_id,
+                admission_ticket=admission_ticket,
+                custom_exam_id=custom_exam_id,
+                class_name=_read_text(worksheet, row_index, header_map.get("班级")),
+                total_score=total_score,
+                total_raw=total_raw,
+                objective_score=to_decimal(_read_value(worksheet, row_index, header_map.get("客观分"))),
+                subjective_score=to_decimal(_read_value(worksheet, row_index, header_map.get("主观分"))),
+                rank_in_class=to_int(_read_value(worksheet, row_index, header_map.get("班次"))),
+                excluded_from_stats=excluded,
+                exclude_reason=exclude_reason,
+                question_scores=question_scores,
+            )
         )
-        rows.append(row)
+
+    return rows, excluded_count, mismatch_count
+
+
+def _parse_total_only_rows(
+    worksheet: Worksheet,
+    header_row: int,
+    header_map: dict[str, int],
+) -> tuple[list[ParsedStudentRow], int, int]:
+    total_column = _find_total_column(header_map)
+    if total_column is None or "姓名" not in header_map:
+        raise ValueError("缺少姓名或总分/得分列")
+
+    rows: list[ParsedStudentRow] = []
+    excluded_count = 0
+    mismatch_count = 0
+
+    for row_index in range(header_row + 1, worksheet.max_row + 1):
+        name = _read_text(worksheet, row_index, header_map.get("姓名"))
+        if not name:
+            continue
+
+        admission_ticket = _read_text(worksheet, row_index, header_map.get("准考证号"))
+        custom_exam_id = _read_text(worksheet, row_index, header_map.get("自定义考号"))
+        external_id = admission_ticket or custom_exam_id
+
+        if admission_ticket and custom_exam_id and admission_ticket != custom_exam_id:
+            mismatch_count += 1
+
+        total_raw_value = _read_value(worksheet, row_index, total_column)
+        total_raw = "" if total_raw_value is None else str(total_raw_value).strip()
+        total_score = to_decimal(total_raw_value)
+        excluded = total_score is None
+        exclude_reason = "non_numeric_total_score" if excluded and total_raw else ""
+
+        if excluded:
+            excluded_count += 1
+
+        rows.append(
+            ParsedStudentRow(
+                name=name,
+                external_id=external_id,
+                admission_ticket=admission_ticket,
+                custom_exam_id=custom_exam_id,
+                class_name=_read_text(worksheet, row_index, header_map.get("班级")),
+                total_score=total_score,
+                total_raw=total_raw,
+                objective_score=None,
+                subjective_score=None,
+                rank_in_class=to_int(_read_value(worksheet, row_index, header_map.get("班次"))),
+                excluded_from_stats=excluded,
+                exclude_reason=exclude_reason,
+                question_scores={},
+            )
+        )
+
+    if not rows:
+        raise ValueError("仅总分考试未解析到学生数据")
 
     return rows, excluded_count, mismatch_count
 

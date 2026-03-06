@@ -3,6 +3,8 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
+from django.contrib.auth import get_user_model
+from django.urls import reverse
 
 from gradebook.models import Exam, ExamQuestionScore, ExamQuestionStat, ExamScore, Student
 from gradebook.services.question_filter import filter_students_by_question_rule
@@ -72,3 +74,18 @@ def test_filter_below_mean_returns_expected_students(seeded_exam: tuple[Exam, St
 
     assert s1.id in result_ids
     assert s2.id not in result_ids
+
+
+@pytest.mark.django_db
+def test_question_filter_page_shows_disabled_message_for_total_only_exam(client) -> None:
+    user_model = get_user_model()
+    user_model.objects.create_user(username="teacher-filter", password="p")
+    assert client.login(username="teacher-filter", password="p")
+
+    exam = Exam.objects.create(name="Total Only", source_sha256="q" * 64)
+
+    response = client.get(reverse("question_filter", kwargs={"exam_id": exam.id}))
+
+    assert response.status_code == 200
+    html = response.content.decode("utf-8")
+    assert "该考试不含题目明细，无法按题号筛选学生" in html

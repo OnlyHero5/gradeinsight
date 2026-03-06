@@ -4,10 +4,13 @@ from pathlib import Path
 
 from gradebook.services.xls_parser import parse_exam_xls
 
+DATASET_DIR = Path("测试数据集")
+
 
 def test_parse_exam_xls_extracts_question_keys_and_rows() -> None:
-    data = Path(
-        "2025-2026学年度第一学期期末考试【八年级】-英语-八7班-单科成绩单.xls"
+    data = (
+        DATASET_DIR
+        / "2025-2026学年度第一学期期末考试【八年级】-英语-八7班-单科成绩单.xls"
     ).read_bytes()
 
     parsed = parse_exam_xls(data)
