@@ -130,6 +130,24 @@ python manage.py check
 
 ---
 
+## 开发维护文档
+
+- 系统架构总览：`docs/plans/2026-03-06-architecture-overview.md`
+- 数据模型与数据流：`docs/plans/2026-03-06-data-model-and-flow.md`
+- 开发者上手手册：`docs/runbook/developer-onboarding.md`
+- 环境变量与运维检查：`docs/runbook/env-and-ops.md`
+- 部署手册：`docs/runbook/deploy.md`
+- 备份手册：`docs/runbook/backup.md`
+
+如果你是首次接手该仓库，推荐阅读顺序：
+
+1. `README.md`
+2. `docs/plans/2026-03-06-architecture-overview.md`
+3. `docs/plans/2026-03-06-data-model-and-flow.md`
+4. `docs/runbook/developer-onboarding.md`
+
+---
+
 ## Docker 部署
 
 ```bash

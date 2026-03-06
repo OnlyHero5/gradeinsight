@@ -18,6 +18,7 @@ docker compose up -d --build
 ## 3. 初始化数据库
 ```bash
 docker compose run --rm web python manage.py migrate
+docker compose run --rm web python manage.py collectstatic --noinput
 docker compose run --rm web python manage.py createsuperuser
 ```
 
@@ -29,9 +30,12 @@ docker compose logs -f --tail=200 web
 
 默认访问：
 - 应用：`http://<server-ip>:8000`（直接访问 web）
-- 反向代理：`http://<server-ip>`（经 Caddy）
+- 反向代理：`http://<server-ip>`（经 Caddy，当前默认是 HTTP）
 
 ## 5. 生产建议
 - 使用正式域名并在 `docker/caddy/Caddyfile` 中配置站点
 - `DJANGO_SECRET_KEY` 使用高强度随机值
+- 配置 `DJANGO_ALLOWED_HOSTS` 与 `DJANGO_CSRF_TRUSTED_ORIGINS`
+- 若以 `DJANGO_DEBUG=0` 运行，建议保留 `collectstatic` 步骤
+- 若部署网络无法访问外部 CDN，需考虑将字体、Bootstrap、HTMX、Chart.js 改为本地静态资源
 - 周期执行备份脚本 `ops/backup_pg.sh`
