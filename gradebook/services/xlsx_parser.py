@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
+from .exam_identity import build_exam_identity, looks_like_exam_text
 from .number_utils import to_decimal, to_int
 
 QUESTION_KEY_PATTERN = re.compile(r"^\d+(?:\(\d+\))?$")
@@ -41,15 +42,17 @@ class ParsedExam:
     student_count: int
     excluded_from_stats_count: int
     mismatched_id_count: int
+    identity_key: str
+    identity_label: str
 
 
-def parse_exam_xlsx(file_bytes: bytes) -> ParsedExam:
+def parse_exam_xlsx(file_bytes: bytes, source_filename: str = "") -> ParsedExam:
     workbook = _load_workbook(file_bytes)
     try:
-        return _parse_detail_workbook(workbook)
+        return _parse_detail_workbook(workbook, source_filename=source_filename)
     except ValueError:
         try:
-            return _parse_total_only_workbook(workbook)
+            return _parse_total_only_workbook(workbook, source_filename=source_filename)
         except ValueError as exc:
             raise ValueError("无法识别 .xlsx 结构：未找到题目明细结构，也未找到可用的汇总/简表结构") from exc
 
@@ -60,7 +63,7 @@ def _load_workbook(file_bytes: bytes) -> Workbook:
         return load_workbook(BytesIO(file_bytes), data_only=True)
 
 
-def _parse_detail_workbook(workbook: Workbook) -> ParsedExam:
+def _parse_detail_workbook(workbook: Workbook, source_filename: str) -> ParsedExam:
     for worksheet in _iter_detail_candidate_sheets(workbook):
         try:
             header_row = _find_detail_header_row(worksheet)
@@ -72,12 +75,19 @@ def _parse_detail_workbook(workbook: Workbook) -> ParsedExam:
                 header_map,
                 question_columns,
             )
+            identity = build_exam_identity(
+                title_candidates=_collect_workbook_title_candidates(workbook),
+                source_filename=source_filename,
+                fallback_class_name=rows[0].class_name if rows else "",
+            )
             return ParsedExam(
                 question_keys=[question_key for question_key, _ in question_columns],
                 rows=rows,
                 student_count=len(rows),
                 excluded_from_stats_count=excluded_count,
                 mismatched_id_count=mismatch_count,
+                identity_key=identity.key,
+                identity_label=identity.label,
             )
         except ValueError:
             continue
@@ -85,18 +95,25 @@ def _parse_detail_workbook(workbook: Workbook) -> ParsedExam:
     raise ValueError("未找到题目明细结构")
 
 
-def _parse_total_only_workbook(workbook: Workbook) -> ParsedExam:
+def _parse_total_only_workbook(workbook: Workbook, source_filename: str) -> ParsedExam:
     for worksheet in _iter_total_only_candidate_sheets(workbook):
         try:
             header_row = _find_total_only_header_row(worksheet)
             header_map = _build_header_map(worksheet, header_row)
             rows, excluded_count, mismatch_count = _parse_total_only_rows(worksheet, header_row, header_map)
+            identity = build_exam_identity(
+                title_candidates=_collect_workbook_title_candidates(workbook),
+                source_filename=source_filename,
+                fallback_class_name=rows[0].class_name if rows else "",
+            )
             return ParsedExam(
                 question_keys=[],
                 rows=rows,
                 student_count=len(rows),
                 excluded_from_stats_count=excluded_count,
                 mismatched_id_count=mismatch_count,
+                identity_key=identity.key,
+                identity_label=identity.label,
             )
         except ValueError:
             continue
@@ -135,6 +152,20 @@ def _iter_total_only_candidate_sheets(workbook: Workbook) -> list[Worksheet]:
             seen_titles.add(worksheet.title)
 
     return sheets
+
+
+def _collect_workbook_title_candidates(workbook: Workbook) -> list[str]:
+    candidates: list[str] = []
+    for worksheet in workbook.worksheets:
+        for row_index in range(1, min(worksheet.max_row, 3) + 1):
+            values = [
+                str(worksheet.cell(row=row_index, column=column).value or "").strip()
+                for column in range(1, min(worksheet.max_column, 12) + 1)
+            ]
+            joined = " ".join(item for item in values if item)
+            if joined and looks_like_exam_text(joined):
+                candidates.append(joined)
+    return candidates
 
 
 def _find_detail_header_row(worksheet: Worksheet) -> int:

@@ -12,6 +12,7 @@ from gradebook.services.excel_parser import is_supported_excel_filename, parse_e
 from gradebook.services.import_exam import (
     DuplicateImportError,
     compute_sha256,
+    find_equivalent_exam,
     import_exam_from_excel_bytes,
     stage_exam_import,
 )
@@ -38,12 +39,18 @@ def import_upload(request):
                 return render(request, "gradebook/import_upload.html", {"form": form})
 
             parsed = parse_exam_excel(payload, source_filename=upload.name)
+            duplicated_exam = find_equivalent_exam(parsed.identity_key)
+            if duplicated_exam is not None:
+                form.add_error("file", f"同一场考试已导入：{duplicated_exam.identity_label or duplicated_exam.name}")
+                return render(request, "gradebook/import_upload.html", {"form": form})
+
             preview = {
                 "student_count": parsed.student_count,
                 "question_count": len(parsed.question_keys),
                 "excluded_from_stats_count": parsed.excluded_from_stats_count,
                 "mismatched_id_count": parsed.mismatched_id_count,
                 "question_keys": parsed.question_keys,
+                "identity_label": parsed.identity_label,
             }
 
             staged = ExamImport.objects.filter(source_sha256=source_hash, status=ExamImport.STATUS_STAGED).first()

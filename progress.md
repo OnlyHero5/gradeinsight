@@ -96,3 +96,46 @@
   - ExamImport 失败后重试的暂存逻辑可能触发唯一约束冲突（IntegrityError）
   - Docker 部署链路缺少 `collectstatic`，与 manifest 静态存储配置存在不匹配风险
   - 文档/样例数据中存在凭据与潜在 PII 暴露点
+
+## 2026-03-06（数据集核查 + 去重设计）
+- 读取并核对仓库主链路：
+  - `gradebook/services/excel_parser.py`
+  - `gradebook/services/xlsx_parser.py`
+  - `gradebook/services/xls_parser.py`
+  - `gradebook/services/import_exam.py`
+  - `gradebook/views/import_views.py`
+  - `gradebook/views/student_views.py`
+  - 解析/导入/页面相关测试
+- 运行现有导入与解析测试：
+  - `pytest -q gradebook/tests/test_xlsx_parser.py gradebook/tests/test_xls_parser.py gradebook/tests/test_import_exam.py gradebook/tests/test_import_flow.py`
+  - 结果：`9 passed`
+- 用真实数据集抽样确认了 6 个 Excel 的 sheet 结构、表头、样本数、题号数
+- 与用户确认业务口径：
+  - 同一场考试的不同文件应阻止重复入库
+  - 不采用“分析时自动合并”方案
+
+## 2026-03-06（同场考试等价去重实现）
+- 按 TDD 新增回归测试：
+  - `gradebook/tests/test_xlsx_parser.py`
+  - `gradebook/tests/test_xls_parser.py`
+  - `gradebook/tests/test_import_exam.py`
+  - `gradebook/tests/test_import_flow.py`
+- 新增考试等价标识服务：
+  - `gradebook/services/exam_identity.py`
+- 解析层改造：
+  - `ParsedExam` 增加 `identity_key` / `identity_label`
+  - `.xlsx` / `.xls` 解析成功后同时产出考试标识
+- 导入层改造：
+  - `Exam` 增加 `identity_key` / `identity_label`
+  - `import_exam_from_excel_bytes()` 新增“同场考试”判重
+  - `import_upload()` 在预览阶段提前拦截等价文件
+- 迁移：
+  - `gradebook/migrations/0003_exam_identity_fields.py`
+- 外部调研：
+  - 联网核对无锡地区初中英语公开卷型资料
+  - 结论是当前样本缺少可安全硬编码的统一题号→题型映射，不在本轮强加
+- 验证结果：
+  - `pytest -q gradebook/tests/test_xlsx_parser.py gradebook/tests/test_xls_parser.py` -> `8 passed`
+  - `pytest -q gradebook/tests/test_import_exam.py gradebook/tests/test_import_flow.py` -> `8 passed`
+  - `pytest -q` -> `39 passed`
+  - `python3 manage.py check` -> `System check identified no issues (0 silenced).`

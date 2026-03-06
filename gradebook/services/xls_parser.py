@@ -6,6 +6,7 @@ from io import BytesIO
 
 import xlrd
 
+from gradebook.services.exam_identity import build_exam_identity
 from gradebook.services.number_utils import to_decimal
 from gradebook.services.xlsx_parser import ParsedExam, ParsedStudentRow
 
@@ -13,7 +14,7 @@ QUESTION_KEY_PATTERN = re.compile(r"^\d+(?:\(\d+\))?$")
 STUDENT_BLOCK_PATTERN = re.compile(r"^(?P<name>.+)\((?P<external_id>[^()]+)\)_成绩单$")
 
 
-def parse_exam_xls(file_bytes: bytes) -> ParsedExam:
+def parse_exam_xls(file_bytes: bytes, source_filename: str = "") -> ParsedExam:
     workbook = xlrd.open_workbook(file_contents=BytesIO(file_bytes).read())
     sheet = workbook.sheet_by_index(0)
 
@@ -41,12 +42,19 @@ def parse_exam_xls(file_bytes: bytes) -> ParsedExam:
         raise ValueError("无法在 .xls 文件中定位学生成绩单块")
 
     excluded_count = len([item for item in rows if item.excluded_from_stats])
+    identity = build_exam_identity(
+        title_candidates=_collect_sheet_title_candidates(sheet),
+        source_filename=source_filename,
+        fallback_class_name=rows[0].class_name if rows else "",
+    )
     return ParsedExam(
         question_keys=question_order,
         rows=rows,
         student_count=len(rows),
         excluded_from_stats_count=excluded_count,
         mismatched_id_count=0,
+        identity_key=identity.key,
+        identity_label=identity.label,
     )
 
 
@@ -114,3 +122,12 @@ def _cell_text(sheet: xlrd.sheet.Sheet, row: int, column: int) -> str:
         return ""
     value = sheet.cell_value(row, column)
     return "" if value is None else str(value).strip()
+
+
+def _collect_sheet_title_candidates(sheet: xlrd.sheet.Sheet) -> list[str]:
+    candidates: list[str] = []
+    for row_index in range(min(sheet.nrows, 4)):
+        first_cell = _cell_text(sheet, row_index, 0)
+        if first_cell:
+            candidates.append(first_cell)
+    return candidates

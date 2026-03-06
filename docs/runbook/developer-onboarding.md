@@ -77,6 +77,7 @@ python manage.py runserver 0.0.0.0:8000
    - `worklists/views.py`
 4. 服务层
    - `gradebook/services/import_exam.py`
+   - `gradebook/services/exam_identity.py`
    - `gradebook/services/stats_queries.py`
    - `gradebook/services/exam_analytics.py`
    - `gradebook/services/student_dashboard.py`
@@ -95,6 +96,7 @@ python manage.py runserver 0.0.0.0:8000
 - 解析分发：`gradebook/services/excel_parser.py`
 - `.xlsx` 解析：`gradebook/services/xlsx_parser.py`
 - `.xls` 解析：`gradebook/services/xls_parser.py`
+- 考试等价标识：`gradebook/services/exam_identity.py`
 - 正式入库：`gradebook/services/import_exam.py`
 - 题目统计重建：`gradebook/services/stats_queries.py`
 
@@ -103,7 +105,7 @@ python manage.py runserver 0.0.0.0:8000
 - 新增导入校验
 - 调整题号识别规则
 - 修复旧版 Excel 兼容性
-- 修改重复导入判断
+- 修改重复导入判断（同文件 / 同场异文件）
 
 ---
 
@@ -193,10 +195,10 @@ python manage.py runserver 0.0.0.0:8000
 
 | 测试文件 | 覆盖点 |
 |---|---|
-| `gradebook/tests/test_import_flow.py` | 上传后是否能进入预览页，是否接受 `.xls` / `.xlsx` |
-| `gradebook/tests/test_import_exam.py` | 正式导入与模型写入逻辑 |
-| `gradebook/tests/test_xlsx_parser.py` | `.xlsx` 解析细节 |
-| `gradebook/tests/test_xls_parser.py` | `.xls` 解析细节 |
+| `gradebook/tests/test_import_flow.py` | 上传后是否能进入预览页、是否接受 `.xls` / `.xlsx`、是否拦截同场异文件 |
+| `gradebook/tests/test_import_exam.py` | 正式导入、模型写入、同场异文件去重 |
+| `gradebook/tests/test_xlsx_parser.py` | `.xlsx` 解析细节、考试等价标识 |
+| `gradebook/tests/test_xls_parser.py` | `.xls` 解析细节、跨格式等价标识 |
 
 ## 5.2 分析与页面
 
@@ -274,6 +276,7 @@ python manage.py check
 - 后缀是否合法
 - 文件是否超大小限制
 - `source_sha256` 是否已导入
+- `identity_key` 是否命中已存在考试（同一场考试的其他文件）
 - 表头是否包含“姓名 / 总分”
 - 旧版 `.xls` 是否符合“成绩单块”结构
 

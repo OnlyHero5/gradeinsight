@@ -15,9 +15,9 @@ def is_supported_excel_filename(filename: str) -> bool:
 def parse_exam_excel(file_bytes: bytes, source_filename: str) -> ParsedExam:
     suffix = _extract_suffix(source_filename)
     if suffix == ".xlsx":
-        return parse_exam_xlsx(file_bytes)
+        return parse_exam_xlsx(file_bytes, source_filename=source_filename)
     if suffix == ".xls":
-        return parse_exam_xls(file_bytes)
+        return parse_exam_xls(file_bytes, source_filename=source_filename)
     raise ValueError("仅支持 .xls 或 .xlsx 文件")
 
 

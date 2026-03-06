@@ -24,6 +24,8 @@ def test_parse_exam_xlsx_extracts_question_keys_and_quality_hints() -> None:
     assert parsed.student_count == 44
     assert parsed.excluded_from_stats_count >= 1
     assert parsed.mismatched_id_count >= 1
+    assert parsed.identity_key
+    assert parsed.identity_label
 
 
 def test_parse_second_detail_xlsx_dataset_file() -> None:
@@ -35,6 +37,7 @@ def test_parse_second_detail_xlsx_dataset_file() -> None:
     assert len(parsed.question_keys) >= 40
     assert parsed.excluded_from_stats_count >= 1
     assert parsed.mismatched_id_count >= 1
+    assert parsed.identity_key
 
 
 def test_parse_total_only_xlsx_from_summary_sheet() -> None:
@@ -49,6 +52,7 @@ def test_parse_total_only_xlsx_from_summary_sheet() -> None:
     assert parsed.rows[0].name == "曹庭玮"
     assert parsed.rows[0].external_id == "59631020"
     assert parsed.rows[0].rank_in_class is not None
+    assert parsed.identity_key
 
 
 @pytest.mark.parametrize(
@@ -69,3 +73,14 @@ def test_parse_total_only_xlsx_from_simple_sheet(filename: str) -> None:
     assert parsed.mismatched_id_count == 0
     assert parsed.rows[0].name == "曹庭玮"
     assert parsed.rows[0].rank_in_class is None
+    assert parsed.identity_key
+
+
+def test_parse_equivalent_xlsx_files_share_identity_key() -> None:
+    simple_path = DATASET_DIR / "（必）八年级英语模拟1(英语)-八年级7班.xlsx"
+    summary_path = DATASET_DIR / "（必）八年级英语模拟1(英语)-八年级7班(1).xlsx"
+
+    simple = parse_exam_excel(simple_path.read_bytes(), source_filename=simple_path.name)
+    summary = parse_exam_excel(summary_path.read_bytes(), source_filename=summary_path.name)
+
+    assert simple.identity_key == summary.identity_key

@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
+from gradebook.services.import_exam import import_exam_from_excel_bytes
+
 DATASET_DIR = Path("测试数据集")
 
 
@@ -64,3 +66,39 @@ def test_import_upload_accepts_xls(client) -> None:
     html = response.content.decode("utf-8")
     assert "导入预览" in html
     assert "学生数" in html
+
+
+@pytest.mark.django_db
+def test_import_upload_rejects_equivalent_exam_file(client) -> None:
+    user_model = get_user_model()
+    user_model.objects.create_user(username="t3", password="p")
+    assert client.login(username="t3", password="p")
+
+    first_path = DATASET_DIR / "（必）八年级英语模拟1(英语)-八年级7班.xlsx"
+    second_path = DATASET_DIR / "（必）八年级英语模拟1(英语)-八年级7班(1).xlsx"
+
+    import_exam_from_excel_bytes(
+        first_path.read_bytes(),
+        exam_name="英语模拟1-简表",
+        exam_date=None,
+        source_filename=first_path.name,
+    )
+
+    upload = SimpleUploadedFile(
+        second_path.name,
+        second_path.read_bytes(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+    response = client.post(
+        reverse("import_upload"),
+        data={
+            "exam_name": "英语模拟1-汇总",
+            "exam_date": "",
+            "file": upload,
+        },
+    )
+
+    assert response.status_code == 200
+    html = response.content.decode("utf-8")
+    assert "同一场考试已导入" in html

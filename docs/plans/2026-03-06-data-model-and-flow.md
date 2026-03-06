@@ -19,7 +19,7 @@
 | 模型 | 作用 | 关键字段 |
 |---|---|---|
 | `Student` | 学生主档 | `name`、`external_id`、`admission_ticket`、`custom_exam_id`、`class_name` |
-| `Exam` | 一次考试导入的主记录 | `name`、`exam_date`、`imported_at`、`source_filename`、`source_sha256` |
+| `Exam` | 一次考试导入的主记录 | `name`、`exam_date`、`imported_at`、`source_filename`、`source_sha256`、`identity_key`、`identity_label` |
 | `ExamScore` | 学生在某次考试的汇总成绩 | `total_score`、`objective_score`、`subjective_score`、`rank_in_class` |
 | `ExamQuestionScore` | 学生在某次考试某道题的得分 | `question_key`、`score_value` |
 | `ExamQuestionStat` | 某次考试某道题的统计结果 | `mean_score`、`median_score`、`sample_n` |
@@ -93,11 +93,20 @@ Exam
 
 ### `source_sha256`
 
-这是当前“重复导入保护”的核心字段，具有唯一约束。
+这是“文件级重复导入保护”的核心字段，具有唯一约束。
 
 - 上传预览阶段就会计算 SHA-256
 - 如果 `Exam` 里已经存在同样的 hash，会直接拒绝重复上传
 - 正式导入后，该 hash 会和考试记录绑定
+
+### `identity_key` / `identity_label`
+
+这是“同场考试等价去重”的核心字段。
+
+- `identity_key`：程序使用的规范化标识
+- `identity_label`：给用户展示的可读标签
+
+它们由解析层从标题行、工作表标题和文件名中归一得到，用于拦截“同一场考试的不同文件”。
 
 ### `participants_n` / `excluded_n`
 
@@ -223,7 +232,8 @@ Exam
 | 约束/规则 | 当前实现 |
 |---|---|
 | 学生去重 | `Student.external_id` 全局唯一 |
-| 考试去重 | `Exam.source_sha256` 唯一 |
+| 文件去重 | `Exam.source_sha256` 唯一 |
+| 同场考试等价去重 | `Exam.identity_key` 应用层判重 |
 | 一场考试同一学生仅一条汇总成绩 | `ExamScore(exam, student)` 唯一 |
 | 一场考试同一学生同一题仅一条题目得分 | `ExamQuestionScore(exam, student, question_key)` 唯一 |
 | 一场考试同一题仅一条统计结果 | `ExamQuestionStat(exam, question_key)` 唯一 |
@@ -279,19 +289,22 @@ Exam
    - 后缀是否合法
    - SHA-256 是否已存在
 4. `parse_exam_excel()` 分发到 `.xlsx` 或 `.xls` 解析器
-5. 解析器返回 `ParsedExam`
-6. 预览信息写入 `ExamImport`
+5. 解析器返回 `ParsedExam`（含 `identity_key` / `identity_label`）
+6. 视图用 `identity_key` 检查是否命中已导入的等价考试
+7. 预览信息写入 `ExamImport`
 
 ### 阶段 2：确认导入
 
 1. `import_confirm` 读取暂存的 `ExamImport`
 2. `import_exam_from_excel_bytes()` 再次做重复导入保护
-3. 创建 `Exam`
-4. 对每条学生记录执行 `_upsert_student()`
-5. 创建 `ExamScore`
-6. 批量写入 `ExamQuestionScore`
-7. 调用 `rebuild_question_stats(exam)`
-8. 将 `ExamImport.status` 更新为 `imported`
+3. 先按 `source_sha256` 检查“同文件重复”
+4. 再按 `identity_key` 检查“同场异文件重复”
+5. 创建 `Exam`
+6. 对每条学生记录执行 `_upsert_student()`
+7. 创建 `ExamScore`
+8. 批量写入 `ExamQuestionScore`
+9. 调用 `rebuild_question_stats(exam)`
+10. 将 `ExamImport.status` 更新为 `imported`
 
 ### 阶段 3：统计可用
 

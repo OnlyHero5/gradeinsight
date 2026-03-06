@@ -203,6 +203,7 @@ psql -U gradeinsight -d gradeinsight < /path/to/backup.sql
 - 上传文件大小是否超过 `GRADEINSIGHT_UPLOAD_MAX_BYTES`
 - 文件后缀是否是 `.xls` / `.xlsx`
 - 是否重复导入同一文件
+- 是否属于同一场考试的等价文件（例如明细表 / 汇总表 / 单科成绩单）
 - `web` 日志中是否有 Excel 解析异常
 
 ## 6.5 备份脚本失败

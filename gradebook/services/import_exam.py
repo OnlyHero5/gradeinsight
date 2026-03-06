@@ -7,12 +7,13 @@ from django.db import transaction
 
 from gradebook.models import Exam, ExamImport, ExamQuestionScore, ExamScore, Student
 from gradebook.services.excel_parser import parse_exam_excel
+from gradebook.services.exam_identity import build_legacy_exam_identity
 from gradebook.services.stats_queries import rebuild_question_stats
 from gradebook.services.xlsx_parser import ParsedExam, ParsedStudentRow
 
 
 class DuplicateImportError(Exception):
-    """Raised when the same source file is imported repeatedly."""
+    """Raised when the same source file or the same exam is imported repeatedly."""
 
 
 def import_exam_from_excel_bytes(
@@ -26,12 +27,18 @@ def import_exam_from_excel_bytes(
         raise DuplicateImportError("该文件已导入，请勿重复提交")
 
     parsed = parse_exam_excel(file_bytes, source_filename=source_filename)
+    duplicated_exam = find_equivalent_exam(parsed.identity_key)
+    if duplicated_exam is not None:
+        raise DuplicateImportError(f"同一场考试已导入：{_duplicate_exam_label(duplicated_exam)}")
+
     with transaction.atomic():
         exam = Exam.objects.create(
             name=exam_name,
             exam_date=exam_date,
             source_filename=source_filename,
             source_sha256=source_hash,
+            identity_key=parsed.identity_key,
+            identity_label=parsed.identity_label,
             participants_n=parsed.student_count,
             excluded_n=parsed.excluded_from_stats_count,
         )
@@ -125,6 +132,35 @@ def _upsert_student(row: ParsedStudentRow) -> Student:
         custom_exam_id=row.custom_exam_id,
         class_name=row.class_name,
     )
+
+
+def find_equivalent_exam(identity_key: str) -> Exam | None:
+    if not identity_key:
+        return None
+
+    direct_match = Exam.objects.filter(identity_key=identity_key).order_by("id").first()
+    if direct_match is not None:
+        return direct_match
+
+    legacy_candidates = Exam.objects.filter(identity_key="").only("id", "name", "source_filename", "identity_label")
+    for exam in legacy_candidates:
+        legacy_identity = build_legacy_exam_identity(
+            source_filename=exam.source_filename,
+            exam_name=exam.name,
+            identity_label=exam.identity_label,
+        )
+        if legacy_identity.key == identity_key:
+            return exam
+    return None
+
+
+def _duplicate_exam_label(exam: Exam) -> str:
+    if exam.identity_label:
+        return exam.identity_label
+    if exam.source_filename:
+        return exam.source_filename
+    return exam.name
+
 
 def _update_student(student: Student, row: ParsedStudentRow) -> Student:
     dirty = False

@@ -26,6 +26,8 @@ class Exam(models.Model):
     imported_at = models.DateTimeField(auto_now_add=True)
     source_filename = models.CharField(max_length=255, blank=True)
     source_sha256 = models.CharField(max_length=64, unique=True)
+    identity_key = models.CharField(max_length=255, blank=True, db_index=True)
+    identity_label = models.CharField(max_length=255, blank=True)
     participants_n = models.IntegerField(default=0)
     excluded_n = models.IntegerField(default=0)
 

@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 
 from gradebook.models import ExamQuestionStat, ExamScore, Student
-from gradebook.services.import_exam import import_exam_from_excel_bytes, import_exam_from_xlsx_bytes
+from gradebook.services.import_exam import (
+    DuplicateImportError,
+    import_exam_from_excel_bytes,
+    import_exam_from_xlsx_bytes,
+)
 
 DATASET_DIR = Path("测试数据集")
 
@@ -92,3 +96,26 @@ def test_import_total_only_xlsx_merges_student_by_name_when_ids_missing() -> Non
     assert Student.objects.count() == student_count_before
     student = Student.objects.get(name="曹庭玮")
     assert ExamScore.objects.filter(student=student).count() == 2
+
+
+@pytest.mark.django_db
+def test_import_rejects_equivalent_exam_from_different_file() -> None:
+    first_path = DATASET_DIR / "（必）八年级英语模拟1(英语)-八年级7班.xlsx"
+    second_path = DATASET_DIR / "（必）八年级英语模拟1(英语)-八年级7班(1).xlsx"
+
+    first_exam = import_exam_from_excel_bytes(
+        first_path.read_bytes(),
+        exam_name="英语模拟1-简表",
+        exam_date=None,
+        source_filename=first_path.name,
+    )
+
+    assert first_exam.participants_n == 44
+
+    with pytest.raises(DuplicateImportError, match="同一场考试已导入"):
+        import_exam_from_excel_bytes(
+            second_path.read_bytes(),
+            exam_name="英语模拟1-汇总",
+            exam_date=None,
+            source_filename=second_path.name,
+        )
